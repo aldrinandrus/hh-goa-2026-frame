@@ -86,12 +86,22 @@ export function dataUrlToFile(dataUrl: string, filename: string): File {
   });
 }
 
+async function warmPublicUrls(...urls: (string | undefined)[]) {
+  await Promise.all(
+    urls
+      .filter((u): u is string => Boolean(u && u.startsWith("http")))
+      .map((u) =>
+        fetch(u, { mode: "no-cors", cache: "no-store" }).catch(() => undefined)
+      )
+  );
+}
+
 /**
- * Share passport/frame to X with the created image at the bottom of the post.
+ * Share passport/frame to X with the created image under the post.
  * X web intent cannot upload media bytes, so we:
- * 1) native share sheet with the PNG file when possible, else
- * 2) open compose with tweet text + public page URL (OG large image card) and
- *    absolute passport image URL so X renders the image under the post.
+ * 1) native share sheet with the PNG file when possible (real media attach),
+ * 2) else open compose with tweet text + public page URL so X can unfurl
+ *    the `summary_large_image` OG card (requires Blob + working /builder/[id]).
  */
 export async function sharePassportToX(opts: {
   dataUrl: string;
@@ -99,7 +109,7 @@ export async function sharePassportToX(opts: {
   text: string;
   /** Public builder page — used for X large-image card unfurl */
   pageUrl?: string;
-  /** Absolute PNG URL — appended so the passport shows under the tweet */
+  /** Absolute PNG URL — warmed so crawlers can fetch it */
   imageUrl?: string;
   /** Pre-opened tab to avoid popup blockers after await */
   shareTab?: Window | null;
@@ -110,12 +120,7 @@ export async function sharePassportToX(opts: {
     lastModified: Date.now(),
   });
 
-  // Tweet body: keep copy, ensure absolute image URL is last (X shows it under the text)
-  let text = opts.text.trim();
-  if (opts.imageUrl && !text.includes(opts.imageUrl)) {
-    text = `${text}\n\n${opts.imageUrl}`;
-  }
-
+  const text = opts.text.trim();
   const filePayload = { files: [file], text, title: "HH Goa 2026" };
 
   // Prefer OS share with the PNG attached (image appears under the tweet on X)
@@ -134,14 +139,18 @@ export async function sharePassportToX(opts: {
         if (opts.shareTab && !opts.shareTab.closed) opts.shareTab.close();
         return "native";
       }
-      /* fall through to intent + image URL */
+      /* fall through to intent + OG page URL */
     }
   }
 
-  // Compose intent: text + page URL (OG card) — image URL already in text above
+  // Warm public URLs so the first X scrape is more likely to succeed
+  await warmPublicUrls(opts.pageUrl, opts.imageUrl);
+
+  // Compose intent: page URL drives summary_large_image card under the tweet
   const intent = buildTweetIntent({
     text,
-    url: opts.pageUrl && !text.includes(opts.pageUrl) ? opts.pageUrl : undefined,
+    url:
+      opts.pageUrl && !text.includes(opts.pageUrl) ? opts.pageUrl : undefined,
   });
   if (opts.shareTab && !opts.shareTab.closed) {
     opts.shareTab.location.href = intent;

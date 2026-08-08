@@ -36,10 +36,12 @@ Set for production:
 
 ```env
 NEXT_PUBLIC_APP_URL=https://your-deployment.vercel.app
-BLOB_READ_WRITE_TOKEN=   # optional — enables Vercel Blob persistence
+BLOB_READ_WRITE_TOKEN=   # required on Vercel for X/OG image unfurl
 ```
 
-Without Blob, cards persist on local disk under `data/cards/` (fine for demos / Node hosting).
+On Vercel, set both env vars (Production + Preview). Without Blob, cards only
+live on the local disk under `data/cards/` — that works for `npm run dev` /
+Node hosting, but serverless instances cannot serve those files to X crawlers.
 
 ## Scripts
 

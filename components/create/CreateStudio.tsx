@@ -62,6 +62,10 @@ export function CreateStudio() {
   const [exporting, setExporting] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
+  const [persistedPageUrl, setPersistedPageUrl] = useState<string | null>(null);
+  const [persistedImageUrl, setPersistedImageUrl] = useState<string | null>(
+    null
+  );
 
   const {
     builderId,
@@ -272,6 +276,7 @@ export function CreateStudio() {
       // Persist first so the public page / OG image is the created passport
       let shareLink = `${base}${builderPublicPath(builderId)}`;
       let shareImageUrl = `${base}/api/cards/${builderId}/image`;
+      let hasPublicImage = false;
       try {
         const saved = await persistCard({
           id: builderId,
@@ -289,13 +294,26 @@ export function CreateStudio() {
         shareImageUrl = saved.imageUrl?.startsWith("http")
           ? saved.imageUrl
           : `${base}${saved.imageUrl || `/api/cards/${builderId}/image`}`;
+        hasPublicImage = Boolean(saved.publicImage);
+        setPersistedPageUrl(shareLink);
+        setPersistedImageUrl(shareImageUrl);
       } catch (err) {
         console.warn("Card persist failed", err);
+        setPersistedPageUrl(shareLink);
+        setPersistedImageUrl(null);
       }
 
       if (!shareAfter) {
         downloadDataUrl(dataUrl, filename);
       } else {
+        if (!hasPublicImage) {
+          // Without Blob on Vercel, OG URLs 404 — download PNG so user can attach
+          downloadDataUrl(dataUrl, filename);
+          setStatus(
+            "Passport downloaded — attach that PNG in the X compose window (set BLOB_READ_WRITE_TOKEN on Vercel for automatic image cards)."
+          );
+        }
+
         const tweet = buildShareTweet({
           mode,
           name,
@@ -595,8 +613,12 @@ export function CreateStudio() {
               const base =
                 origin ||
                 (typeof window !== "undefined" ? window.location.origin : "");
-              const shareLink = `${base}${builderPublicPath(builderId)}`;
-              const shareImageUrl = `${base}/api/cards/${builderId}/image`;
+              const shareLink =
+                persistedPageUrl ||
+                `${base}${builderPublicPath(builderId)}`;
+              const shareImageUrl =
+                persistedImageUrl ||
+                `${base}/api/cards/${builderId}/image`;
               const tweet = buildShareTweet({
                 mode,
                 name,
@@ -621,6 +643,8 @@ export function CreateStudio() {
             onAnother={() => {
               setStep(1);
               setResultUrl(null);
+              setPersistedPageUrl(null);
+              setPersistedImageUrl(null);
               exportCacheRef.current = null;
               exportInflightRef.current = null;
               const prev = previewUrlRef.current;

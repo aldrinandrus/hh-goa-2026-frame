@@ -38,5 +38,11 @@ export async function persistCard(payload: {
     const err = await res.json().catch(() => ({}));
     throw new Error((err as { error?: string }).error || "Save failed");
   }
-  return res.json() as Promise<{ ok: boolean; id: string; url: string; imageUrl: string }>;
+  return res.json() as Promise<{
+    ok: boolean;
+    id: string;
+    url: string;
+    imageUrl: string;
+    publicImage: boolean;
+  }>;
 }

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/shared/Navbar";
 import { FloatingBackground } from "@/components/landing/FloatingBackground";
 import { EVENT_META } from "@/lib/design-tokens";
+import { getServerAppUrl } from "@/lib/site";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -21,9 +22,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const title = `${card.name} · ${card.builderTitle} · HH Goa 2026`;
   const description = `${card.name} — ${card.role} · Builder No. ${card.id} · ${EVENT_META.place}`;
   // Absolute URLs so X can unfurl the passport image under the tweet
-  const site = (
-    process.env.NEXT_PUBLIC_APP_URL ?? "https://hhgoa-frame.vercel.app"
-  ).replace(/\/$/, "");
+  const site =
+    getServerAppUrl() || "https://hhgoa-frame.vercel.app";
   const imageUrl = card.imageDataUrl.startsWith("http")
     ? card.imageDataUrl
     : `${site}/api/cards/${card.id}/image`;

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { saveCard } from "@/server/store-card";
 import { isValidBuilderId } from "@/lib/builder-id";
+import { getServerAppUrl } from "@/lib/site";
 import type { FormatMode, StoredCard } from "@/types";
 
 export const runtime = "nodejs";
@@ -70,13 +71,22 @@ export async function POST(req: Request) {
     }
 
     const saved = await saveCard(card);
+    const site = getServerAppUrl();
+    const pagePath = `/builder/${saved.id}`;
+    const imageIsHttp = saved.imageDataUrl.startsWith("http");
+    const imageUrl = imageIsHttp
+      ? saved.imageDataUrl
+      : site
+        ? `${site}/api/cards/${saved.id}/image`
+        : `/api/cards/${saved.id}/image`;
+
     return NextResponse.json({
       ok: true,
       id: saved.id,
-      url: `/builder/${saved.id}`,
-      imageUrl: saved.imageDataUrl.startsWith("http")
-        ? saved.imageDataUrl
-        : `/api/cards/${saved.id}/image`,
+      url: site ? `${site}${pagePath}` : pagePath,
+      imageUrl,
+      /** True when PNG is on a public HTTP host (needed for X image cards) */
+      publicImage: imageIsHttp,
     });
   } catch (err) {
     console.error(err);
