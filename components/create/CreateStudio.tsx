@@ -24,6 +24,7 @@ import { BuilderIdCard } from "@/components/templates/BuilderIdCard";
 import { Button } from "@/components/ui/button";
 import { getCroppedImageDataUrl } from "@/lib/face-crop";
 import {
+  buildShareTweet,
   downloadDataUrl,
   exportNodeToPng,
   sharePassportToX,
@@ -291,10 +292,13 @@ export function CreateStudio() {
       if (!shareAfter) {
         downloadDataUrl(dataUrl, filename);
       } else {
-        const tweet =
-          mode === "frame"
-            ? `Just framed myself for HH Goa 2026 🌴\n\nBuild. Ship. Repeat.\n\n#FrameInGoa\n${shareLink}`
-            : `Just got my HH Goa 2026 Builder Passport 🌴\n\nSee you in Goa.\n\nBuild. Ship. Repeat.\n\n#FrameInGoa\n${shareLink}`;
+        const tweet = buildShareTweet({
+          mode,
+          name,
+          builderId,
+          url: shareLink,
+          twitter,
+        });
 
         const how = await sharePassportToX({
           dataUrl,
@@ -588,10 +592,13 @@ export function CreateStudio() {
               const shareLink = origin
                 ? `${origin}${builderPublicPath(builderId)}`
                 : `${window.location.origin}${builderPublicPath(builderId)}`;
-              const tweet =
-                mode === "frame"
-                  ? `Just framed myself for HH Goa 2026 🌴\n\nBuild. Ship. Repeat.\n\n#FrameInGoa\n${shareLink}`
-                  : `Just got my HH Goa 2026 Builder Passport 🌴\n\nSee you in Goa.\n\nBuild. Ship. Repeat.\n\n#FrameInGoa\n${shareLink}`;
+              const tweet = buildShareTweet({
+                mode,
+                name,
+                builderId,
+                url: shareLink,
+                twitter,
+              });
               const filename =
                 mode === "frame"
                   ? `HH-Goa-2026-Frame-${builderId}.png`

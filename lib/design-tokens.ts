@@ -68,6 +68,6 @@ export const ACCEPTED_MIME = [
 ] as const;
 
 export const FRAME_EXPORT_SIZE = 2048;
-/** Passport canvas: 4:5 portrait — export via pixelRatio → ≥1600×2000 */
-export const CARD_EXPORT_WIDTH = 800;
-export const CARD_EXPORT_HEIGHT = 1000;
+/** Passport canvas: 4:5 portrait — export via pixelRatio 2 → 2000×2500 */
+export const CARD_EXPORT_WIDTH = 1000;
+export const CARD_EXPORT_HEIGHT = 1250;

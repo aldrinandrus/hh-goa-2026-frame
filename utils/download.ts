@@ -156,26 +156,65 @@ export function openTweetComposer(text: string) {
   link.remove();
 }
 
+/** Well-presented X post copy (matches HH Goa share style). */
+export function buildShareTweet(opts: {
+  mode: "frame" | "card";
+  name: string;
+  builderId: string;
+  url: string;
+  twitter?: string;
+}): string {
+  const name = (opts.name || "Builder").trim() || "Builder";
+  const id = opts.builderId.startsWith("#")
+    ? opts.builderId
+    : `#${opts.builderId}`;
+  const handle = (opts.twitter || "").trim().replace(/^@/, "");
+  const headline =
+    opts.mode === "frame"
+      ? "🌴 Built my HH Goa 2026 Builder Frame!"
+      : "🌴 Built my HH Goa 2026 Builder Passport!";
+  const cta =
+    opts.mode === "frame"
+      ? "Create your own Builder Frame:"
+      : "Create your own Builder Passport:";
+
+  const lines = [
+    headline,
+    "",
+    `👤 ${name}`,
+    `🪪 Builder ID: ${id}`,
+  ];
+  if (handle) lines.push(`𝕏 @${handle}`);
+  lines.push(
+    "",
+    "Excited to build, ship, and connect with amazing builders in Goa. 🚀",
+    "",
+    `${cta} ${opts.url}`,
+    "",
+    "#FrameInGoa #HHGoa2026"
+  );
+  return lines.join("\n");
+}
+
 export const PASSPORT_TWEET = (url: string) =>
-  `Just got my HH Goa 2026 Builder Passport 🌴
-
-See you in Goa.
-
-Build. Ship. Repeat.
-
-#FrameInGoa
-${url}`;
+  buildShareTweet({
+    mode: "card",
+    name: "Builder",
+    builderId: "HHG26",
+    url,
+  });
 
 export const FRAME_TWEET = (url: string) =>
-  `Just framed myself for HH Goa 2026 🌴
+  buildShareTweet({
+    mode: "frame",
+    name: "Builder",
+    builderId: "HHG26",
+    url,
+  });
 
-Build. Ship. Repeat.
-
-#FrameInGoa
-${url}`;
-
-export const DEFAULT_TWEET = `Just got my HH Goa 2026 Builder Passport 🌴
-
-See you in Goa.
-
-#FrameInGoa`;
+export const DEFAULT_TWEET = buildShareTweet({
+  mode: "card",
+  name: "Builder",
+  builderId: "HHG26",
+  url: "https://hhgoa.com",
+});
