@@ -8,11 +8,19 @@ export async function exportNodeToPng(
   options?: { pixelRatio?: number; cacheBust?: boolean }
 ): Promise<string> {
   const pixelRatio = options?.pixelRatio ?? 2;
+  const cacheBust = options?.cacheBust ?? false;
 
-  // Ensure fonts are ready (prevents blank/broken typography in exports)
-  if (typeof document !== "undefined" && "fonts" in document) {
+  // Only wait on fonts if they are still loading
+  if (
+    typeof document !== "undefined" &&
+    "fonts" in document &&
+    document.fonts.status !== "loaded"
+  ) {
     try {
-      await document.fonts.ready;
+      await Promise.race([
+        document.fonts.ready,
+        new Promise<void>((r) => setTimeout(r, 400)),
+      ]);
     } catch {
       /* ignore */
     }
@@ -35,24 +43,11 @@ export async function exportNodeToPng(
     })
   );
 
-  const filter = (domNode: HTMLElement) => {
-    // Skip invisible noise that can break html-to-image
-    if (domNode.tagName === "SCRIPT") return false;
-    return true;
-  };
-
-  await toPng(node, {
-    cacheBust: options?.cacheBust ?? true,
-    pixelRatio: 1,
-    quality: 1,
-    filter,
-  });
-
+  // Single capture — warm-up double-render was ~2× slower
   return toPng(node, {
-    cacheBust: options?.cacheBust ?? true,
+    cacheBust,
     pixelRatio,
     quality: 1,
-    filter,
     style: {
       transform: "none",
     },
@@ -70,17 +65,71 @@ export function downloadDataUrl(dataUrl: string, filename: string) {
   document.body.appendChild(link);
   link.click();
   link.remove();
-  // Delay revoke so the browser can start the download
   window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1500);
 }
 
-function dataUrlToBlob(dataUrl: string): Blob {
+export function dataUrlToBlob(dataUrl: string): Blob {
   const [header, data] = dataUrl.split(",");
   const mime = /data:(.*?);base64/.exec(header || "")?.[1] || "image/png";
   const binary = atob(data || "");
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  const len = binary.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
   return new Blob([bytes], { type: mime });
+}
+
+export function dataUrlToFile(dataUrl: string, filename: string): File {
+  const blob = dataUrlToBlob(dataUrl);
+  return new File([blob], filename, {
+    type: blob.type || "image/png",
+    lastModified: Date.now(),
+  });
+}
+
+/**
+ * Share passport/frame to X with the image attached when the OS allows it.
+ * X web intent cannot attach media — so we:
+ * 1) use native share sheet with the PNG file (mobile / supporting browsers), or
+ * 2) download the PNG + open X compose with the public page URL (desktop fallback).
+ */
+export async function sharePassportToX(opts: {
+  dataUrl: string;
+  filename: string;
+  text: string;
+  /** Pre-opened tab to avoid popup blockers after await */
+  shareTab?: Window | null;
+}): Promise<"native" | "intent"> {
+  const file = dataUrlToFile(opts.dataUrl, opts.filename);
+  const payload = { files: [file], text: opts.text, title: "HH Goa 2026" };
+
+  if (
+    typeof navigator !== "undefined" &&
+    typeof navigator.share === "function" &&
+    typeof navigator.canShare === "function" &&
+    navigator.canShare(payload)
+  ) {
+    try {
+      await navigator.share(payload);
+      if (opts.shareTab && !opts.shareTab.closed) opts.shareTab.close();
+      return "native";
+    } catch (err) {
+      if ((err as Error)?.name === "AbortError") {
+        if (opts.shareTab && !opts.shareTab.closed) opts.shareTab.close();
+        return "native";
+      }
+      /* fall through to intent */
+    }
+  }
+
+  // Desktop: give them the PNG to attach, open compose with link preview URL
+  downloadDataUrl(opts.dataUrl, opts.filename);
+  const intent = buildTweetIntent({ text: opts.text });
+  if (opts.shareTab && !opts.shareTab.closed) {
+    opts.shareTab.location.href = intent;
+  } else {
+    openTweetComposer(opts.text);
+  }
+  return "intent";
 }
 
 export function buildTweetIntent(opts: {
@@ -98,7 +147,6 @@ export function buildTweetIntent(opts: {
 /** Open X compose without popup-blocker issues after async work. */
 export function openTweetComposer(text: string) {
   const intent = buildTweetIntent({ text });
-  // Prefer same-tab navigation fallback via <a> click (still allowed after await)
   const link = document.createElement("a");
   link.href = intent;
   link.target = "_blank";

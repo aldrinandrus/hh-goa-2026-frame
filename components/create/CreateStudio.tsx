@@ -26,7 +26,7 @@ import { getCroppedImageDataUrl } from "@/lib/face-crop";
 import {
   downloadDataUrl,
   exportNodeToPng,
-  openTweetComposer,
+  sharePassportToX,
 } from "@/utils/download";
 import { persistCard } from "@/utils/persist-card";
 import { builderPublicPath } from "@/lib/site";
@@ -76,6 +76,12 @@ export function CreateStudio() {
   const exportCardRef = useRef<HTMLDivElement>(null);
   const previewUrlRef = useRef<string | null>(null);
   const cropGenRef = useRef(0);
+  const exportCacheRef = useRef<{ key: string; dataUrl: string } | null>(null);
+  const exportInflightRef = useRef<{
+    key: string;
+    promise: Promise<string>;
+  } | null>(null);
+  const exportPrefetchGen = useRef(0);
 
   const publicPath = builderPublicPath(displayId);
   const publicUrl = useMemo(() => {
@@ -144,6 +150,90 @@ export function CreateStudio() {
   const canGoIdentity = Boolean(croppedUrl);
   const canGoAsset = Boolean(name.trim() && role.trim());
 
+  const exportCacheKey = useCallback(() => {
+    return [
+      mode,
+      builderId,
+      croppedUrl,
+      name,
+      role,
+      twitter,
+      builderTitle,
+    ].join("|");
+  }, [mode, builderId, croppedUrl, name, role, twitter, builderTitle]);
+
+  const captureExport = useCallback(async () => {
+    const key = exportCacheKey();
+    const cached = exportCacheRef.current;
+    if (cached?.key === key) return cached.dataUrl;
+
+    const inflight = exportInflightRef.current;
+    if (inflight?.key === key) return inflight.promise;
+
+    const node =
+      mode === "frame" ? exportFrameRef.current : exportCardRef.current;
+    if (!node) throw new Error("Preview not ready");
+
+    const promise = (async () => {
+      await new Promise<void>((r) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => r()))
+      );
+      const dataUrl = await exportNodeToPng(node, {
+        pixelRatio: 2,
+        cacheBust: false,
+      });
+      exportCacheRef.current = { key, dataUrl };
+      return dataUrl;
+    })();
+
+    exportInflightRef.current = { key, promise };
+    try {
+      return await promise;
+    } finally {
+      if (exportInflightRef.current?.promise === promise) {
+        exportInflightRef.current = null;
+      }
+    }
+  }, [exportCacheKey, mode]);
+
+  // Prefetch PNG while user is on the asset step so Download/Share feel instant
+  useEffect(() => {
+    if (step !== 3 || !croppedUrl || !builderId) return;
+    if (mode === "card" && (!name.trim() || !role.trim())) return;
+
+    const key = exportCacheKey();
+    if (exportCacheRef.current?.key === key) return;
+
+    const gen = ++exportPrefetchGen.current;
+    const timer = window.setTimeout(() => {
+      void (async () => {
+        try {
+          const dataUrl = await captureExport();
+          if (gen !== exportPrefetchGen.current) return;
+          exportCacheRef.current = { key, dataUrl };
+        } catch {
+          /* prefetch is best-effort */
+        }
+      })();
+    }, 250);
+
+    return () => {
+      window.clearTimeout(timer);
+      exportPrefetchGen.current += 1;
+    };
+  }, [
+    step,
+    croppedUrl,
+    builderId,
+    mode,
+    name,
+    role,
+    twitter,
+    builderTitle,
+    exportCacheKey,
+    captureExport,
+  ]);
+
   const runExport = async (shareAfter: boolean) => {
     if (!croppedUrl || !builderId) {
       setStatus("Upload a photo first, then try again.");
@@ -155,39 +245,49 @@ export function CreateStudio() {
       return;
     }
 
-    setExporting(true);
-    setStatus("Building your HH Goa pass…");
-
-    // Open a tab immediately (before awaits) so Share isn't blocked
+    // Open tab early so X isn't blocked after async export/persist
     let shareTab: Window | null = null;
     if (shareAfter) {
       shareTab = window.open("about:blank", "_blank");
     }
 
+    setExporting(true);
+    setStatus(
+      shareAfter ? "Preparing your passport for X…" : "Building your HH Goa pass…"
+    );
+
     try {
-      // Prefer offscreen hi-res node (full size, unclipped)
-      const node =
-        mode === "frame" ? exportFrameRef.current : exportCardRef.current;
-      if (!node) throw new Error("Preview not ready");
-
-      await new Promise<void>((r) =>
-        requestAnimationFrame(() => requestAnimationFrame(() => r()))
-      );
-
-      const dataUrl = await exportNodeToPng(node, {
-        pixelRatio: mode === "frame" ? 2 : 2.5,
-      });
+      const dataUrl = await captureExport();
 
       const filename =
         mode === "frame"
           ? `HH-Goa-2026-Frame-${builderId}.png`
           : `HH-Goa-2026-Passport-${builderId}.png`;
 
-      const shareLink = origin
-        ? `${origin}${builderPublicPath(builderId)}`
-        : `${typeof window !== "undefined" ? window.location.origin : ""}${builderPublicPath(builderId)}`;
+      const base =
+        origin ||
+        (typeof window !== "undefined" ? window.location.origin : "");
 
-      // Download / share first — don't block on network persist
+      // Persist first so the public page / OG image is the created passport
+      let shareLink = `${base}${builderPublicPath(builderId)}`;
+      try {
+        const saved = await persistCard({
+          id: builderId,
+          name: name || "Builder",
+          role: role || "HH Goa Builder",
+          twitter: twitter || undefined,
+          builderTitle,
+          format: mode,
+          imageDataUrl: dataUrl,
+          photoDataUrl: croppedUrl,
+        });
+        shareLink = saved.url.startsWith("http")
+          ? saved.url
+          : `${base}${saved.url}`;
+      } catch (err) {
+        console.warn("Card persist failed", err);
+      }
+
       if (!shareAfter) {
         downloadDataUrl(dataUrl, filename);
       } else {
@@ -195,31 +295,21 @@ export function CreateStudio() {
           mode === "frame"
             ? `Just framed myself for HH Goa 2026 🌴\n\nBuild. Ship. Repeat.\n\n#FrameInGoa\n${shareLink}`
             : `Just got my HH Goa 2026 Builder Passport 🌴\n\nSee you in Goa.\n\nBuild. Ship. Repeat.\n\n#FrameInGoa\n${shareLink}`;
-        const intent = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweet)}`;
-        if (shareTab && !shareTab.closed) {
-          shareTab.location.href = intent;
-        } else {
-          openTweetComposer(tweet);
+
+        const how = await sharePassportToX({
+          dataUrl,
+          filename,
+          text: tweet,
+          shareTab,
+        });
+        if (how === "intent") {
+          setStatus("Passport downloaded — attach the PNG to your X post.");
         }
       }
 
       setResultUrl(dataUrl);
       setStep("result");
-      setStatus(null);
-
-      // Best-effort public page save (must not fail the user action)
-      void persistCard({
-        id: builderId,
-        name: name || "Builder",
-        role: role || "HH Goa Builder",
-        twitter: twitter || undefined,
-        builderTitle,
-        format: mode,
-        imageDataUrl: dataUrl,
-        photoDataUrl: croppedUrl,
-      }).catch((err) => {
-        console.warn("Card persist failed", err);
-      });
+      if (!shareAfter) setStatus(null);
     } catch (e) {
       console.error(e);
       if (shareTab && !shareTab.closed) shareTab.close();
@@ -494,7 +584,7 @@ export function CreateStudio() {
               );
             }}
             onShare={() => {
-              if (!builderId) return;
+              if (!builderId || !resultUrl) return;
               const shareLink = origin
                 ? `${origin}${builderPublicPath(builderId)}`
                 : `${window.location.origin}${builderPublicPath(builderId)}`;
@@ -502,11 +592,29 @@ export function CreateStudio() {
                 mode === "frame"
                   ? `Just framed myself for HH Goa 2026 🌴\n\nBuild. Ship. Repeat.\n\n#FrameInGoa\n${shareLink}`
                   : `Just got my HH Goa 2026 Builder Passport 🌴\n\nSee you in Goa.\n\nBuild. Ship. Repeat.\n\n#FrameInGoa\n${shareLink}`;
-              openTweetComposer(tweet);
+              const filename =
+                mode === "frame"
+                  ? `HH-Goa-2026-Frame-${builderId}.png`
+                  : `HH-Goa-2026-Passport-${builderId}.png`;
+              const shareTab = window.open("about:blank", "_blank");
+              void sharePassportToX({
+                dataUrl: resultUrl,
+                filename,
+                text: tweet,
+                shareTab,
+              }).then((how) => {
+                if (how === "intent") {
+                  setStatus(
+                    "Passport downloaded — attach the PNG to your X post."
+                  );
+                }
+              });
             }}
             onAnother={() => {
               setStep(1);
               setResultUrl(null);
+              exportCacheRef.current = null;
+              exportInflightRef.current = null;
               const prev = previewUrlRef.current;
               previewUrlRef.current = null;
               setPreviewUrl(null);
