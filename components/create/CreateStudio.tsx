@@ -307,7 +307,9 @@ export function CreateStudio() {
           shareTab,
         });
         if (how === "intent") {
-          setStatus("Passport downloaded — attach the PNG to your X post.");
+          setStatus(
+            "Passport image ready — paste (Ctrl+V) or attach the PNG under your X post."
+          );
         }
       }
 
@@ -612,7 +614,7 @@ export function CreateStudio() {
               }).then((how) => {
                 if (how === "intent") {
                   setStatus(
-                    "Passport downloaded — attach the PNG to your X post."
+                    "Passport image ready — paste (Ctrl+V) or attach the PNG under your X post."
                   );
                 }
               });

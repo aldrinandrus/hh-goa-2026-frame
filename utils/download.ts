@@ -87,10 +87,11 @@ export function dataUrlToFile(dataUrl: string, filename: string): File {
 }
 
 /**
- * Share passport/frame to X with the image attached when the OS allows it.
- * X web intent cannot attach media — so we:
- * 1) use native share sheet with the PNG file (mobile / supporting browsers), or
- * 2) download the PNG + open X compose with the public page URL (desktop fallback).
+ * Share passport/frame to X with the created image at the bottom of the post.
+ * X web intent cannot attach media by URL, so we:
+ * 1) native share sheet with the PNG file when the OS supports it, or
+ * 2) copy image to clipboard + download PNG, then open X compose so the
+ *    passport can be pasted/attached under the tweet text (like a normal X post).
  */
 export async function sharePassportToX(opts: {
   dataUrl: string;
@@ -99,9 +100,14 @@ export async function sharePassportToX(opts: {
   /** Pre-opened tab to avoid popup blockers after await */
   shareTab?: Window | null;
 }): Promise<"native" | "intent"> {
-  const file = dataUrlToFile(opts.dataUrl, opts.filename);
+  const blob = dataUrlToBlob(opts.dataUrl);
+  const file = new File([blob], opts.filename, {
+    type: blob.type || "image/png",
+    lastModified: Date.now(),
+  });
   const payload = { files: [file], text: opts.text, title: "HH Goa 2026" };
 
+  // Prefer OS share sheet with the passport image attached (shows under the text on X)
   if (
     typeof navigator !== "undefined" &&
     typeof navigator.share === "function" &&
@@ -117,12 +123,27 @@ export async function sharePassportToX(opts: {
         if (opts.shareTab && !opts.shareTab.closed) opts.shareTab.close();
         return "native";
       }
-      /* fall through to intent */
+      /* fall through */
     }
   }
 
-  // Desktop: give them the PNG to attach, open compose with link preview URL
+  // Desktop fallback: put PNG on clipboard for paste into X, and download for attach
+  try {
+    if (
+      typeof ClipboardItem !== "undefined" &&
+      navigator.clipboard &&
+      typeof navigator.clipboard.write === "function"
+    ) {
+      await navigator.clipboard.write([
+        new ClipboardItem({ [blob.type || "image/png"]: blob }),
+      ]);
+    }
+  } catch {
+    /* clipboard image may be blocked — download still covers attach */
+  }
+
   downloadDataUrl(opts.dataUrl, opts.filename);
+
   const intent = buildTweetIntent({ text: opts.text });
   if (opts.shareTab && !opts.shareTab.closed) {
     opts.shareTab.location.href = intent;
