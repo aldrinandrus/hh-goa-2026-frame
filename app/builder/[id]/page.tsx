@@ -20,9 +20,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const title = `${card.name} · ${card.builderTitle} · HH Goa 2026`;
   const description = `${card.name} — ${card.role} · Builder No. ${card.id} · ${EVENT_META.place}`;
+  // Absolute URLs so X can unfurl the passport image under the tweet
+  const site = (
+    process.env.NEXT_PUBLIC_APP_URL ?? "https://hhgoa-frame.vercel.app"
+  ).replace(/\/$/, "");
   const imageUrl = card.imageDataUrl.startsWith("http")
     ? card.imageDataUrl
-    : `/api/cards/${card.id}/image`;
+    : `${site}/api/cards/${card.id}/image`;
 
   return {
     title,
@@ -30,7 +34,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     openGraph: {
       title,
       description,
-      type: "profile",
+      type: "website",
+      url: `${site}/builder/${card.id}`,
       images: [
         {
           url: imageUrl,

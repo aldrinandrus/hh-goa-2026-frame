@@ -271,6 +271,7 @@ export function CreateStudio() {
 
       // Persist first so the public page / OG image is the created passport
       let shareLink = `${base}${builderPublicPath(builderId)}`;
+      let shareImageUrl = `${base}/api/cards/${builderId}/image`;
       try {
         const saved = await persistCard({
           id: builderId,
@@ -285,6 +286,9 @@ export function CreateStudio() {
         shareLink = saved.url.startsWith("http")
           ? saved.url
           : `${base}${saved.url}`;
+        shareImageUrl = saved.imageUrl?.startsWith("http")
+          ? saved.imageUrl
+          : `${base}${saved.imageUrl || `/api/cards/${builderId}/image`}`;
       } catch (err) {
         console.warn("Card persist failed", err);
       }
@@ -300,17 +304,14 @@ export function CreateStudio() {
           twitter,
         });
 
-        const how = await sharePassportToX({
+        await sharePassportToX({
           dataUrl,
           filename,
           text: tweet,
+          pageUrl: shareLink,
+          imageUrl: shareImageUrl,
           shareTab,
         });
-        if (how === "intent") {
-          setStatus(
-            "Passport image ready — paste (Ctrl+V) or attach the PNG under your X post."
-          );
-        }
       }
 
       setResultUrl(dataUrl);
@@ -591,9 +592,11 @@ export function CreateStudio() {
             }}
             onShare={() => {
               if (!builderId || !resultUrl) return;
-              const shareLink = origin
-                ? `${origin}${builderPublicPath(builderId)}`
-                : `${window.location.origin}${builderPublicPath(builderId)}`;
+              const base =
+                origin ||
+                (typeof window !== "undefined" ? window.location.origin : "");
+              const shareLink = `${base}${builderPublicPath(builderId)}`;
+              const shareImageUrl = `${base}/api/cards/${builderId}/image`;
               const tweet = buildShareTweet({
                 mode,
                 name,
@@ -610,13 +613,9 @@ export function CreateStudio() {
                 dataUrl: resultUrl,
                 filename,
                 text: tweet,
+                pageUrl: shareLink,
+                imageUrl: shareImageUrl,
                 shareTab,
-              }).then((how) => {
-                if (how === "intent") {
-                  setStatus(
-                    "Passport image ready — paste (Ctrl+V) or attach the PNG under your X post."
-                  );
-                }
               });
             }}
             onAnother={() => {

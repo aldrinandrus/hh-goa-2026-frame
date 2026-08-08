@@ -88,67 +88,71 @@ export function dataUrlToFile(dataUrl: string, filename: string): File {
 
 /**
  * Share passport/frame to X with the created image at the bottom of the post.
- * X web intent cannot attach media by URL, so we:
- * 1) native share sheet with the PNG file when the OS supports it, or
- * 2) copy image to clipboard + download PNG, then open X compose so the
- *    passport can be pasted/attached under the tweet text (like a normal X post).
+ * X web intent cannot upload media bytes, so we:
+ * 1) native share sheet with the PNG file when possible, else
+ * 2) open compose with tweet text + public page URL (OG large image card) and
+ *    absolute passport image URL so X renders the image under the post.
  */
 export async function sharePassportToX(opts: {
   dataUrl: string;
   filename: string;
   text: string;
+  /** Public builder page — used for X large-image card unfurl */
+  pageUrl?: string;
+  /** Absolute PNG URL — appended so the passport shows under the tweet */
+  imageUrl?: string;
   /** Pre-opened tab to avoid popup blockers after await */
   shareTab?: Window | null;
 }): Promise<"native" | "intent"> {
   const blob = dataUrlToBlob(opts.dataUrl);
   const file = new File([blob], opts.filename, {
-    type: blob.type || "image/png",
+    type: "image/png",
     lastModified: Date.now(),
   });
-  const payload = { files: [file], text: opts.text, title: "HH Goa 2026" };
 
-  // Prefer OS share sheet with the passport image attached (shows under the text on X)
-  if (
-    typeof navigator !== "undefined" &&
-    typeof navigator.share === "function" &&
-    typeof navigator.canShare === "function" &&
-    navigator.canShare(payload)
-  ) {
+  // Tweet body: keep copy, ensure absolute image URL is last (X shows it under the text)
+  let text = opts.text.trim();
+  if (opts.imageUrl && !text.includes(opts.imageUrl)) {
+    text = `${text}\n\n${opts.imageUrl}`;
+  }
+
+  const filePayload = { files: [file], text, title: "HH Goa 2026" };
+
+  // Prefer OS share with the PNG attached (image appears under the tweet on X)
+  if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
     try {
-      await navigator.share(payload);
-      if (opts.shareTab && !opts.shareTab.closed) opts.shareTab.close();
-      return "native";
+      const canFiles =
+        typeof navigator.canShare !== "function" ||
+        navigator.canShare(filePayload);
+      if (canFiles) {
+        await navigator.share(filePayload);
+        if (opts.shareTab && !opts.shareTab.closed) opts.shareTab.close();
+        return "native";
+      }
     } catch (err) {
       if ((err as Error)?.name === "AbortError") {
         if (opts.shareTab && !opts.shareTab.closed) opts.shareTab.close();
         return "native";
       }
-      /* fall through */
+      /* fall through to intent + image URL */
     }
   }
 
-  // Desktop fallback: put PNG on clipboard for paste into X, and download for attach
-  try {
-    if (
-      typeof ClipboardItem !== "undefined" &&
-      navigator.clipboard &&
-      typeof navigator.clipboard.write === "function"
-    ) {
-      await navigator.clipboard.write([
-        new ClipboardItem({ [blob.type || "image/png"]: blob }),
-      ]);
-    }
-  } catch {
-    /* clipboard image may be blocked — download still covers attach */
-  }
-
-  downloadDataUrl(opts.dataUrl, opts.filename);
-
-  const intent = buildTweetIntent({ text: opts.text });
+  // Compose intent: text + page URL (OG card) — image URL already in text above
+  const intent = buildTweetIntent({
+    text,
+    url: opts.pageUrl && !text.includes(opts.pageUrl) ? opts.pageUrl : undefined,
+  });
   if (opts.shareTab && !opts.shareTab.closed) {
     opts.shareTab.location.href = intent;
   } else {
-    openTweetComposer(opts.text);
+    const link = document.createElement("a");
+    link.href = intent;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
   }
   return "intent";
 }
