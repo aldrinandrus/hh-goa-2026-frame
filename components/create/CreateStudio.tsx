@@ -24,9 +24,9 @@ import { BuilderIdCard } from "@/components/templates/BuilderIdCard";
 import { Button } from "@/components/ui/button";
 import { getCroppedImageDataUrl } from "@/lib/face-crop";
 import {
-  buildTweetIntent,
   downloadDataUrl,
   exportNodeToPng,
+  openTweetComposer,
 } from "@/utils/download";
 import { persistCard } from "@/utils/persist-card";
 import { builderPublicPath } from "@/lib/site";
@@ -145,26 +145,70 @@ export function CreateStudio() {
   const canGoAsset = Boolean(name.trim() && role.trim());
 
   const runExport = async (shareAfter: boolean) => {
-    if (!croppedUrl || !builderId) return;
+    if (!croppedUrl || !builderId) {
+      setStatus("Upload a photo first, then try again.");
+      return;
+    }
     if (mode === "card" && (!name.trim() || !role.trim())) {
       setStatus("Add your name and role for the Builder Passport.");
       setStep(2);
       return;
     }
+
     setExporting(true);
     setStatus("Building your HH Goa pass…");
+
+    // Open a tab immediately (before awaits) so Share isn't blocked
+    let shareTab: Window | null = null;
+    if (shareAfter) {
+      shareTab = window.open("about:blank", "_blank");
+    }
+
     try {
+      // Prefer offscreen hi-res node (full size, unclipped)
       const node =
         mode === "frame" ? exportFrameRef.current : exportCardRef.current;
       if (!node) throw new Error("Preview not ready");
 
-      await new Promise((r) => requestAnimationFrame(() => r(undefined)));
+      await new Promise<void>((r) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => r()))
+      );
 
       const dataUrl = await exportNodeToPng(node, {
         pixelRatio: mode === "frame" ? 2 : 2.5,
       });
 
-      await persistCard({
+      const filename =
+        mode === "frame"
+          ? `HH-Goa-2026-Frame-${builderId}.png`
+          : `HH-Goa-2026-Passport-${builderId}.png`;
+
+      const shareLink = origin
+        ? `${origin}${builderPublicPath(builderId)}`
+        : `${typeof window !== "undefined" ? window.location.origin : ""}${builderPublicPath(builderId)}`;
+
+      // Download / share first — don't block on network persist
+      if (!shareAfter) {
+        downloadDataUrl(dataUrl, filename);
+      } else {
+        const tweet =
+          mode === "frame"
+            ? `Just framed myself for HH Goa 2026 🌴\n\nBuild. Ship. Repeat.\n\n#FrameInGoa\n${shareLink}`
+            : `Just got my HH Goa 2026 Builder Passport 🌴\n\nSee you in Goa.\n\nBuild. Ship. Repeat.\n\n#FrameInGoa\n${shareLink}`;
+        const intent = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweet)}`;
+        if (shareTab && !shareTab.closed) {
+          shareTab.location.href = intent;
+        } else {
+          openTweetComposer(tweet);
+        }
+      }
+
+      setResultUrl(dataUrl);
+      setStep("result");
+      setStatus(null);
+
+      // Best-effort public page save (must not fail the user action)
+      void persistCard({
         id: builderId,
         name: name || "Builder",
         role: role || "HH Goa Builder",
@@ -173,35 +217,13 @@ export function CreateStudio() {
         format: mode,
         imageDataUrl: dataUrl,
         photoDataUrl: croppedUrl,
+      }).catch((err) => {
+        console.warn("Card persist failed", err);
       });
-
-      setResultUrl(dataUrl);
-      setStep("result");
-      setStatus(null);
-
-      const shareLink = origin ? `${origin}${builderPublicPath(builderId)}` : publicUrl;
-
-      if (!shareAfter) {
-        downloadDataUrl(
-          dataUrl,
-          mode === "frame"
-            ? `HH-Goa-2026-Frame-${builderId}.png`
-            : `HH-Goa-2026-Passport-${builderId}.png`
-        );
-      } else {
-        const tweet =
-          mode === "frame"
-            ? `Just framed myself for HH Goa 2026 🌴\n\nBuild. Ship. Repeat.\n\n#FrameInGoa\n${shareLink}`
-            : `Just got my HH Goa 2026 Builder Passport 🌴\n\nSee you in Goa.\n\nBuild. Ship. Repeat.\n\n#FrameInGoa\n${shareLink}`;
-        window.open(
-          buildTweetIntent({ text: tweet }),
-          "_blank",
-          "noopener,noreferrer"
-        );
-      }
     } catch (e) {
       console.error(e);
-      setStatus("Something glitched — try again.");
+      if (shareTab && !shareTab.closed) shareTab.close();
+      setStatus("Export failed — try again in a moment.");
     } finally {
       setExporting(false);
     }
@@ -475,16 +497,12 @@ export function CreateStudio() {
               if (!builderId) return;
               const shareLink = origin
                 ? `${origin}${builderPublicPath(builderId)}`
-                : publicPath;
+                : `${window.location.origin}${builderPublicPath(builderId)}`;
               const tweet =
                 mode === "frame"
                   ? `Just framed myself for HH Goa 2026 🌴\n\nBuild. Ship. Repeat.\n\n#FrameInGoa\n${shareLink}`
                   : `Just got my HH Goa 2026 Builder Passport 🌴\n\nSee you in Goa.\n\nBuild. Ship. Repeat.\n\n#FrameInGoa\n${shareLink}`;
-              window.open(
-                buildTweetIntent({ text: tweet }),
-                "_blank",
-                "noopener,noreferrer"
-              );
+              openTweetComposer(tweet);
             }}
             onAnother={() => {
               setStep(1);
@@ -505,11 +523,17 @@ export function CreateStudio() {
         )}
       </main>
 
-      {/* Offscreen export — separate tree; never mutates visible preview */}
+      {/* Offscreen hi-res export — must NOT clip to 1×1 (breaks html-to-image) */}
       <div
         aria-hidden
-        className="pointer-events-none fixed left-[-10000px] top-0 overflow-hidden"
-        style={{ width: 1, height: 1 }}
+        className="pointer-events-none fixed"
+        style={{
+          left: 0,
+          top: 0,
+          transform: "translate(-120vw, -120vh)",
+          opacity: 0,
+          zIndex: -1,
+        }}
       >
         {croppedUrl && builderId ? (
           <>

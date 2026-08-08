@@ -203,25 +203,26 @@ export const BuilderIdCard = memo(
             <TicketPerforation className="w-full h-2" />
           </div>
 
-          {/* PHOTO — passport treatment */}
+          {/* PHOTO — passport treatment (sized to leave room for identity + X) */}
           <div
             style={{
               position: "relative",
               zIndex: 2,
               display: "flex",
               justifyContent: "center",
-              padding: `${8 * s}px ${16 * s}px ${4 * s}px`,
+              padding: `${6 * s}px ${16 * s}px ${2 * s}px`,
+              flexShrink: 0,
             }}
           >
             {/* Pink offset behind photo */}
             <div
               style={{
                 position: "absolute",
-                width: width * 0.52,
-                height: width * 0.62,
+                width: width * 0.44,
+                height: width * 0.5,
                 background: "#ff0080",
                 borderRadius: `${18 * s}px ${6 * s}px ${22 * s}px ${8 * s}px`,
-                transform: `translate(${5 * s}px, ${5 * s}px)`,
+                transform: `translate(${4 * s}px, ${4 * s}px)`,
                 zIndex: 0,
               }}
             />
@@ -230,8 +231,8 @@ export const BuilderIdCard = memo(
               style={{
                 position: "relative",
                 zIndex: 1,
-                width: width * 0.52,
-                height: width * 0.62,
+                width: width * 0.44,
+                height: width * 0.5,
                 background: "#fee101",
                 border: `${2 * s}px solid #000`,
                 borderRadius: `${18 * s}px ${6 * s}px ${22 * s}px ${8 * s}px`,
@@ -270,7 +271,7 @@ export const BuilderIdCard = memo(
               style={{
                 position: "absolute",
                 left: 8 * s,
-                bottom: -4 * s,
+                bottom: -2 * s,
                 zIndex: 3,
               }}
             >
@@ -279,14 +280,14 @@ export const BuilderIdCard = memo(
                 sublabel="2026"
                 rotate={-18}
                 variant="green"
-                size={58 * s}
+                size={48 * s}
               />
             </div>
             <div
               style={{
                 position: "absolute",
                 right: 6 * s,
-                top: 4 * s,
+                top: 2 * s,
                 zIndex: 3,
               }}
             >
@@ -295,7 +296,7 @@ export const BuilderIdCard = memo(
                 sublabel="BUILDER"
                 rotate={14}
                 variant="pink"
-                size={52 * s}
+                size={44 * s}
               />
             </div>
           </div>
@@ -305,15 +306,19 @@ export const BuilderIdCard = memo(
             style={{
               position: "relative",
               zIndex: 2,
-              padding: `${10 * s}px ${14 * s}px 0`,
+              padding: `${8 * s}px ${14 * s}px 0`,
               textAlign: "center",
+              flexShrink: 0,
             }}
           >
             <div
               style={{
                 fontFamily: "var(--font-imbue), Imbue, serif",
                 fontWeight: 800,
-                fontSize: Math.min(36 * s, (width * 0.9) / Math.max(displayName.length * 0.42, 8)),
+                fontSize: Math.min(
+                  32 * s,
+                  (width * 0.88) / Math.max(displayName.length * 0.42, 8)
+                ),
                 lineHeight: 0.95,
                 color: "#000",
                 letterSpacing: "-0.02em",
@@ -329,7 +334,7 @@ export const BuilderIdCard = memo(
                 fontWeight: 600,
                 color: "#0b6839",
                 letterSpacing: "0.12em",
-                marginTop: 6 * s,
+                marginTop: 5 * s,
                 textTransform: "uppercase",
               }}
             >
@@ -337,11 +342,11 @@ export const BuilderIdCard = memo(
             </div>
             <div
               style={{
-                marginTop: 8 * s,
+                marginTop: 7 * s,
                 display: "inline-block",
                 fontFamily: "var(--font-imbue), Imbue, serif",
                 fontWeight: 700,
-                fontSize: 18 * s,
+                fontSize: 16 * s,
                 color: "#ff0080",
                 letterSpacing: "0.04em",
                 textTransform: "uppercase",
@@ -351,15 +356,29 @@ export const BuilderIdCard = memo(
             >
               {builderTitle}
             </div>
+            {/* X handle — always reserved space when present; high contrast */}
             {handle ? (
               <div
                 style={{
-                  marginTop: 6 * s,
+                  marginTop: 8 * s,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6 * s,
+                  background: "#000",
+                  color: "#fee101",
                   fontFamily: "var(--font-victor-mono), monospace",
-                  fontSize: 10 * s,
-                  color: "#00000099",
+                  fontSize: 11 * s,
+                  fontWeight: 700,
+                  letterSpacing: "0.04em",
+                  padding: `${4 * s}px ${10 * s}px`,
+                  borderRadius: 2 * s,
+                  border: `${1.5 * s}px solid #0b6839`,
+                  boxShadow: `${2 * s}px ${2 * s}px 0 #ff0080`,
                 }}
               >
+                <span aria-hidden style={{ color: "#fffbe8" }}>
+                  𝕏
+                </span>
                 {handle}
               </div>
             ) : null}
@@ -415,7 +434,7 @@ export const BuilderIdCard = memo(
               </div>
               <div
                 style={{
-                  marginTop: 6 * s,
+                  marginTop: 4 * s,
                   display: "flex",
                   gap: 4 * s,
                   alignItems: "center",
@@ -426,14 +445,14 @@ export const BuilderIdCard = memo(
                   sublabel="28 OCT"
                   rotate={-8}
                   variant="yellow"
-                  size={44 * s}
+                  size={36 * s}
                 />
                 <PassportStamp
                   label="BUILD"
                   sublabel="SHIP"
                   rotate={6}
                   variant="red"
-                  size={40 * s}
+                  size={34 * s}
                 />
               </div>
               <div

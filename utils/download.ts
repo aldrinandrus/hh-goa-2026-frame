@@ -9,41 +9,78 @@ export async function exportNodeToPng(
 ): Promise<string> {
   const pixelRatio = options?.pixelRatio ?? 2;
 
+  // Ensure fonts are ready (prevents blank/broken typography in exports)
+  if (typeof document !== "undefined" && "fonts" in document) {
+    try {
+      await document.fonts.ready;
+    } catch {
+      /* ignore */
+    }
+  }
+
   const imgs = Array.from(node.querySelectorAll("img"));
   await Promise.all(
-    imgs.map((img) =>
-      img.complete
-        ? Promise.resolve()
-        : new Promise<void>((resolve) => {
-            img.onload = () => resolve();
-            img.onerror = () => resolve();
-          })
-    )
+    imgs.map(async (img) => {
+      if (!img.complete) {
+        await new Promise<void>((resolve) => {
+          img.onload = () => resolve();
+          img.onerror = () => resolve();
+        });
+      }
+      try {
+        await img.decode();
+      } catch {
+        /* ignore */
+      }
+    })
   );
+
+  const filter = (domNode: HTMLElement) => {
+    // Skip invisible noise that can break html-to-image
+    if (domNode.tagName === "SCRIPT") return false;
+    return true;
+  };
 
   await toPng(node, {
     cacheBust: options?.cacheBust ?? true,
     pixelRatio: 1,
     quality: 1,
+    filter,
   });
 
   return toPng(node, {
     cacheBust: options?.cacheBust ?? true,
     pixelRatio,
     quality: 1,
+    filter,
     style: {
       transform: "none",
     },
   });
 }
 
+/** Reliable PNG download via Blob (data-URL length limits break <a download>). */
 export function downloadDataUrl(dataUrl: string, filename: string) {
+  const blob = dataUrlToBlob(dataUrl);
+  const objectUrl = URL.createObjectURL(blob);
   const link = document.createElement("a");
-  link.href = dataUrl;
+  link.href = objectUrl;
   link.download = filename;
+  link.rel = "noopener";
   document.body.appendChild(link);
   link.click();
   link.remove();
+  // Delay revoke so the browser can start the download
+  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1500);
+}
+
+function dataUrlToBlob(dataUrl: string): Blob {
+  const [header, data] = dataUrl.split(",");
+  const mime = /data:(.*?);base64/.exec(header || "")?.[1] || "image/png";
+  const binary = atob(data || "");
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return new Blob([bytes], { type: mime });
 }
 
 export function buildTweetIntent(opts: {
@@ -56,6 +93,19 @@ export function buildTweetIntent(opts: {
   if (opts.url) params.set("url", opts.url);
   if (opts.hashtags?.length) params.set("hashtags", opts.hashtags.join(","));
   return `https://twitter.com/intent/tweet?${params.toString()}`;
+}
+
+/** Open X compose without popup-blocker issues after async work. */
+export function openTweetComposer(text: string) {
+  const intent = buildTweetIntent({ text });
+  // Prefer same-tab navigation fallback via <a> click (still allowed after await)
+  const link = document.createElement("a");
+  link.href = intent;
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
 }
 
 export const PASSPORT_TWEET = (url: string) =>

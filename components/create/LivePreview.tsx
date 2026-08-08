@@ -37,8 +37,7 @@ export const LivePreview = memo(function LivePreview({
         Live preview
       </p>
       <div
-        className="relative flex w-full min-h-[320px] items-start justify-center px-2 sm:min-h-[400px]"
-        style={{ contain: "layout paint" }}
+        className="relative flex w-full min-h-[320px] items-start justify-center px-2 sm:min-h-[420px]"
       >
         {!croppedUrl ? (
           <div className="flex h-72 w-full max-w-xs items-center justify-center rounded-[4px] border-2 border-dashed border-black/20 bg-white/40 font-mono text-sm text-black/40">
