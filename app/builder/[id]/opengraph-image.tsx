@@ -3,7 +3,7 @@ import { getCard } from "@/server/store-card";
 
 export const runtime = "nodejs";
 export const alt = "HH Goa 2026 Builder Passport";
-export const size = { width: 1600, height: 2000 };
+export const size = { width: 1600, height: 1792 };
 export const contentType = "image/png";
 
 interface Props {

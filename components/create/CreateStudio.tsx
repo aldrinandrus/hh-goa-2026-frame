@@ -835,7 +835,7 @@ function ResultView({
         {name || "Builder"} · {builderTitle}
       </p>
 
-      <div className="mt-8 aspect-[4/5] w-full max-w-sm">
+      <div className="mt-8 aspect-[1000/1120] w-full max-w-sm">
         {resultUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img

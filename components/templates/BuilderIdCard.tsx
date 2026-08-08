@@ -387,7 +387,7 @@ function GoaSceneBand({ w, h }: { w: number; h: number }) {
 }
 
 /**
- * HH Goa 2026 Builder Passport — dense festival travel artifact (4:5).
+ * HH Goa 2026 Builder Passport — compact festival travel artifact.
  */
 export const BuilderIdCard = memo(
   forwardRef<HTMLDivElement, BuilderPassportProps>(function BuilderIdCard(
@@ -404,7 +404,7 @@ export const BuilderIdCard = memo(
     },
     ref
   ) {
-    const height = Math.round(width * 1.25);
+    const height = Math.round(width * 1.12);
     const s = width / 360;
     const displayName = (name || "YOUR NAME").toUpperCase();
     const displayRole = (role || "BUILDER").toUpperCase();
@@ -412,7 +412,7 @@ export const BuilderIdCard = memo(
     const handle = handleRaw ? `@${handleRaw}` : null;
     const publicUrl = qrUrl || builderPublicUrl(builderId);
     const idDisplay = builderId.startsWith("#") ? builderId : `#${builderId}`;
-    const photo = width * 0.318;
+    const photo = width * 0.248;
 
     const paperNoise =
       "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")";
@@ -708,30 +708,30 @@ export const BuilderIdCard = memo(
               position: "relative",
               zIndex: 3,
               display: "grid",
-              gridTemplateColumns: `${52 * s}px 1fr ${52 * s}px`,
-              alignItems: "flex-start",
+              gridTemplateColumns: `${40 * s}px 1fr ${40 * s}px`,
+              alignItems: "center",
               gap: 2 * s,
-              padding: `${5 * s}px ${7 * s}px 0`,
+              padding: `${3 * s}px ${6 * s}px 0`,
               flexShrink: 0,
             }}
           >
-            <PostageStamp size={46 * s} />
+            <PostageStamp size={36 * s} />
 
-            <div style={{ textAlign: "center", paddingTop: 2 * s }}>
+            <div style={{ textAlign: "center", paddingTop: 0 }}>
               {/* Hanging ribbon */}
               <div
                 style={{
                   display: "inline-block",
-                  marginTop: -5 * s,
+                  marginTop: -2 * s,
                   background: "#ff0080",
                   border: `${1.25 * s}px solid #000`,
                   borderTop: "none",
-                  padding: `${7 * s}px ${8 * s}px ${8 * s}px`,
+                  padding: `${4 * s}px ${6 * s}px ${5 * s}px`,
                   clipPath: "polygon(0 0, 100% 0, 100% 82%, 50% 100%, 0 82%)",
                   boxShadow: `${1.5 * s}px ${1.5 * s}px 0 #00000022`,
                 }}
               >
-                <svg width={12 * s} height={12 * s} viewBox="0 0 16 16" style={{ margin: "0 auto", display: "block" }}>
+                <svg width={9 * s} height={9 * s} viewBox="0 0 16 16" style={{ margin: "0 auto", display: "block" }}>
                   <circle cx="8" cy="4" r="2" fill="#fee101" />
                   <path d="M8 6 v8" stroke="#fee101" strokeWidth="1.5" />
                   <ellipse cx="8" cy="5" rx="5" ry="2" fill="#fee101" transform="rotate(-25 8 5)" />
@@ -740,25 +740,23 @@ export const BuilderIdCard = memo(
                 <div
                   style={{
                     fontFamily: "var(--font-victor-mono), monospace",
-                    fontSize: 6 * s,
+                    fontSize: 5 * s,
                     fontWeight: 700,
                     letterSpacing: "0.06em",
                     color: "#fffbe8",
-                    marginTop: 2 * s,
-                    lineHeight: 1.15,
+                    marginTop: 1 * s,
+                    lineHeight: 1.1,
                   }}
                 >
-                  HH GOA
-                  <br />
-                  2026
+                  HH GOA 2026
                 </div>
               </div>
               <div
                 style={{
-                  marginTop: 4 * s,
+                  marginTop: 2 * s,
                   fontFamily: "var(--font-imbue), Imbue, serif",
                   fontWeight: 800,
-                  fontSize: 20 * s,
+                  fontSize: 15 * s,
                   lineHeight: 0.95,
                   letterSpacing: "-0.02em",
                   color: "#0b6839",
@@ -770,10 +768,10 @@ export const BuilderIdCard = memo(
               </div>
               <div
                 style={{
-                  marginTop: 2 * s,
+                  marginTop: 1 * s,
                   fontFamily: "var(--font-victor-mono), monospace",
-                  fontSize: 5.5 * s,
-                  letterSpacing: "0.16em",
+                  fontSize: 4.5 * s,
+                  letterSpacing: "0.14em",
                   color: "#0b6839",
                   fontWeight: 700,
                   opacity: 0.7,
@@ -783,12 +781,12 @@ export const BuilderIdCard = memo(
               </div>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 * s }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 * s }}>
               <StampCircle
-                size={48 * s}
+                size={36 * s}
                 rotate={10}
                 label="BUILD IN GOA"
-                sub="SHIP FROM PARADISE"
+                sub="SHIP IT"
                 stroke="#000"
                 opacity={0.88}
               />
@@ -801,14 +799,14 @@ export const BuilderIdCard = memo(
               position: "relative",
               zIndex: 3,
               display: "grid",
-              gridTemplateColumns: `${58 * s}px 1fr ${58 * s}px`,
+              gridTemplateColumns: `${46 * s}px 1fr ${46 * s}px`,
               alignItems: "center",
               gap: 1 * s,
-              padding: `${2 * s}px ${5 * s}px 0`,
+              padding: `${1 * s}px ${4 * s}px 0`,
               flexShrink: 0,
             }}
           >
-            {/* Left — stamp + signpost illustration */}
+            {/* Left — signpost illustration */}
             <div
               style={{
                 display: "flex",
@@ -817,8 +815,7 @@ export const BuilderIdCard = memo(
                 gap: 1 * s,
               }}
             >
-              <StampCircle size={30 * s} rotate={-16} label="GOA" sub="INDIA" stroke="#0b6839" />
-              <SignpostArt w={52 * s} h={96 * s} />
+              <SignpostArt w={42 * s} h={72 * s} />
             </div>
 
             {/* Photo — multi-ring premium treatment */}
@@ -928,41 +925,39 @@ export const BuilderIdCard = memo(
               ))}
             </div>
 
-            {/* Right — official stamp + Goan house scene */}
+            {/* Right — official badge + Goan house */}
             <div
               style={{
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
-                gap: 2 * s,
+                gap: 1.5 * s,
               }}
             >
               <div
                 style={{
                   background: "#fee101",
                   border: `${1.25 * s}px solid #000`,
-                  padding: `${1.5 * s}px ${3 * s}px`,
+                  padding: `${1 * s}px ${2.5 * s}px`,
                   fontFamily: "var(--font-victor-mono), monospace",
-                  fontSize: 4.5 * s,
+                  fontSize: 4 * s,
                   fontWeight: 700,
-                  letterSpacing: "0.06em",
-                  boxShadow: `${1.5 * s}px ${1.5 * s}px 0 #ff0080`,
+                  letterSpacing: "0.05em",
+                  boxShadow: `${1.25 * s}px ${1.25 * s}px 0 #ff0080`,
                   textAlign: "center",
                   transform: "rotate(3deg)",
-                  lineHeight: 1.15,
+                  lineHeight: 1.1,
                 }}
               >
                 OFFICIAL
                 <br />
                 BUILDER
               </div>
-              <StampCircle size={28 * s} rotate={12} label="VERIFIED" sub="BUILDER" stroke="#ff0080" />
-              <GoanHouseArt w={56 * s} h={78 * s} />
-              <StampCircle size={24 * s} rotate={-10} label="28–31" sub="OCT 26" stroke="#0b6839" />
+              <GoanHouseArt w={44 * s} h={58 * s} />
             </div>
           </div>
 
-          {/* ===== NAME BADGE STACK (compact — X sits beside title) ===== */}
+          {/* ===== NAME BADGE STACK ===== */}
           <div
             style={{
               position: "relative",
@@ -970,24 +965,11 @@ export const BuilderIdCard = memo(
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              gap: 1.5 * s,
-              padding: `${2 * s}px ${10 * s}px 0`,
+              gap: 1 * s,
+              padding: `${1.5 * s}px ${8 * s}px 0`,
               flexShrink: 0,
             }}
           >
-            <div
-              style={{
-                fontFamily: "var(--font-victor-mono), monospace",
-                fontSize: 4.5 * s,
-                letterSpacing: "0.18em",
-                color: "#0b6839",
-                opacity: 0.4,
-                fontWeight: 700,
-                lineHeight: 1,
-              }}
-            >
-              BUILDER PASS · HHG26 · GOA, INDIA
-            </div>
             {/* Layered name plate */}
             <div style={{ position: "relative", maxWidth: "96%" }}>
               <div
@@ -996,7 +978,7 @@ export const BuilderIdCard = memo(
                   position: "absolute",
                   inset: 0,
                   background: "#ff0080",
-                  transform: `translate(${2 * s}px, ${2 * s}px)`,
+                  transform: `translate(${1.5 * s}px, ${1.5 * s}px)`,
                 }}
               />
               <div
@@ -1005,7 +987,7 @@ export const BuilderIdCard = memo(
                   position: "absolute",
                   inset: 0,
                   background: "#fee101",
-                  transform: `translate(${1 * s}px, ${1 * s}px)`,
+                  transform: `translate(${0.75 * s}px, ${0.75 * s}px)`,
                 }}
               />
               <div
@@ -1013,8 +995,8 @@ export const BuilderIdCard = memo(
                   position: "relative",
                   background: "#0b6839",
                   color: "#fee101",
-                  border: `${1.5 * s}px solid #000`,
-                  padding: `${3 * s}px ${12 * s}px`,
+                  border: `${1.25 * s}px solid #000`,
+                  padding: `${2 * s}px ${10 * s}px`,
                   textAlign: "center",
                 }}
               >
@@ -1023,7 +1005,7 @@ export const BuilderIdCard = memo(
                     fontFamily: "var(--font-imbue), Imbue, serif",
                     fontWeight: 800,
                     fontSize: Math.min(
-                      16 * s,
+                      14 * s,
                       (width * 0.7) / Math.max(displayName.length * 0.42, 8)
                     ),
                     letterSpacing: "0.04em",
@@ -1038,27 +1020,27 @@ export const BuilderIdCard = memo(
               style={{
                 background: "#fee101",
                 color: "#e40014",
-                border: `${1.25 * s}px solid #000`,
-                boxShadow: `${1.5 * s}px ${1.5 * s}px 0 #0b6839`,
-                padding: `${2 * s}px ${9 * s}px`,
+                border: `${1.1 * s}px solid #000`,
+                boxShadow: `${1.25 * s}px ${1.25 * s}px 0 #0b6839`,
+                padding: `${1.5 * s}px ${7 * s}px`,
                 fontFamily: "var(--font-victor-mono), monospace",
                 fontWeight: 700,
-                fontSize: 7.5 * s,
-                letterSpacing: "0.1em",
+                fontSize: 6.5 * s,
+                letterSpacing: "0.08em",
                 maxWidth: "92%",
                 textAlign: "center",
                 transform: "rotate(-0.6deg)",
                 display: "inline-flex",
                 alignItems: "center",
-                gap: 4 * s,
+                gap: 3 * s,
                 lineHeight: 1,
               }}
             >
-              <svg width={7 * s} height={9 * s} viewBox="0 0 8 10" aria-hidden>
+              <svg width={6 * s} height={8 * s} viewBox="0 0 8 10" aria-hidden>
                 <path d="M4 0 L0 5.5 H3.5 L2.5 10 L8 4 H4.5 Z" fill="#e40014" />
               </svg>
               {displayRole}
-              <svg width={7 * s} height={9 * s} viewBox="0 0 8 10" aria-hidden>
+              <svg width={6 * s} height={8 * s} viewBox="0 0 8 10" aria-hidden>
                 <path d="M4 0 L0 5.5 H3.5 L2.5 10 L8 4 H4.5 Z" fill="#e40014" />
               </svg>
             </div>
@@ -1069,7 +1051,7 @@ export const BuilderIdCard = memo(
                 flexWrap: "wrap",
                 alignItems: "center",
                 justifyContent: "center",
-                gap: `${2 * s}px ${6 * s}px`,
+                gap: `${1.5 * s}px ${5 * s}px`,
                 maxWidth: "96%",
               }}
             >
@@ -1077,12 +1059,12 @@ export const BuilderIdCard = memo(
                 style={{
                   fontFamily: "var(--font-imbue), Imbue, serif",
                   fontWeight: 800,
-                  fontSize: 11 * s,
+                  fontSize: 9.5 * s,
                   color: "#ff0080",
-                  letterSpacing: "0.06em",
+                  letterSpacing: "0.05em",
                   textTransform: "uppercase",
-                  borderBottom: `${1.75 * s}px solid #fee101`,
-                  paddingBottom: 1 * s,
+                  borderBottom: `${1.5 * s}px solid #fee101`,
+                  paddingBottom: 0.5 * s,
                   textAlign: "center",
                   lineHeight: 1,
                 }}
@@ -1094,15 +1076,15 @@ export const BuilderIdCard = memo(
                   style={{
                     display: "inline-flex",
                     alignItems: "center",
-                    gap: 3 * s,
+                    gap: 2.5 * s,
                     background: "#000",
                     color: "#fee101",
                     fontFamily: "var(--font-victor-mono), monospace",
-                    fontSize: 7.5 * s,
+                    fontSize: 6.5 * s,
                     fontWeight: 700,
                     letterSpacing: "0.04em",
                     lineHeight: 1,
-                    padding: `${2.5 * s}px ${7 * s}px`,
+                    padding: `${2 * s}px ${6 * s}px`,
                     border: `${1 * s}px solid #fee101`,
                     flexShrink: 0,
                   }}
@@ -1119,60 +1101,14 @@ export const BuilderIdCard = memo(
             style={{
               position: "relative",
               zIndex: 2,
-              margin: `${2 * s}px ${7 * s}px 0`,
-              border: `${1.25 * s}px dashed #0b683955`,
+              margin: `${1.5 * s}px ${6 * s}px 0`,
+              border: `${1 * s}px dashed #0b683955`,
               background: "#fffbe8",
               flexShrink: 0,
               overflow: "hidden",
             }}
           >
-            <GoaSceneBand w={width - 30 * s} h={46 * s} />
-          </div>
-
-          {/* Micro meta */}
-          <div
-            style={{
-              position: "relative",
-              zIndex: 2,
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              padding: `${1.5 * s}px ${9 * s}px 0`,
-              flexShrink: 0,
-            }}
-          >
-            <span
-              style={{
-                fontFamily: "var(--font-victor-mono), monospace",
-                fontSize: 4.5 * s,
-                letterSpacing: "0.14em",
-                color: "#0b6839",
-                opacity: 0.5,
-                fontWeight: 700,
-              }}
-            >
-              BUILD · SHIP · REPEAT
-            </span>
-            <StampCircle
-              size={18 * s}
-              rotate={-8}
-              label="HH"
-              sub="GOA"
-              stroke="#ff0080"
-              opacity={0.7}
-            />
-            <span
-              style={{
-                fontFamily: "var(--font-victor-mono), monospace",
-                fontSize: 4.5 * s,
-                letterSpacing: "0.12em",
-                color: "#ff0080",
-                opacity: 0.55,
-                fontWeight: 700,
-              }}
-            >
-              FRAME IN GOA
-            </span>
+            <GoaSceneBand w={width - 28 * s} h={30 * s} />
           </div>
 
           {/* ===== INFO GRID ===== */}
@@ -1180,19 +1116,20 @@ export const BuilderIdCard = memo(
             style={{
               position: "relative",
               zIndex: 2,
-              marginTop: 2 * s,
-              marginLeft: 6 * s,
-              marginRight: 6 * s,
-              borderTop: `${1.25 * s}px solid #0b683955`,
-              paddingTop: 3 * s,
+              marginTop: 1.5 * s,
+              marginLeft: 5 * s,
+              marginRight: 5 * s,
+              borderTop: `${1 * s}px solid #0b683955`,
+              paddingTop: 2 * s,
               display: "grid",
               gridTemplateColumns: "1.05fr 0.95fr 1fr",
               flexShrink: 0,
+              flexGrow: 1,
             }}
           >
             <div
               style={{
-                padding: `0 ${3 * s}px`,
+                padding: `0 ${2.5 * s}px`,
                 borderRight: `${1 * s}px dashed #0b683944`,
                 display: "flex",
                 flexDirection: "column",
@@ -1203,36 +1140,25 @@ export const BuilderIdCard = memo(
             >
               <div
                 style={{
-                  position: "absolute",
-                  top: 28 * s,
-                  left: -2 * s,
-                  opacity: 0.2,
-                  pointerEvents: "none",
-                }}
-              >
-                <StampCircle size={28 * s} rotate={-20} label="SCAN" stroke="#0b6839" />
-              </div>
-              <div
-                style={{
                   fontFamily: "var(--font-victor-mono), monospace",
-                  fontSize: 5 * s,
+                  fontSize: 4.5 * s,
                   fontWeight: 700,
-                  letterSpacing: "0.06em",
+                  letterSpacing: "0.05em",
                   color: "#e40014",
                   textAlign: "center",
                 }}
               >
-                ✦ BUILDER CLASS ✦
+                ✦ CLASS ✦
               </div>
               <div
                 style={{
                   fontFamily: "var(--font-imbue), Imbue, serif",
                   fontWeight: 800,
-                  fontSize: 10 * s,
+                  fontSize: 8.5 * s,
                   color: "#ff0080",
                   textAlign: "center",
                   lineHeight: 1.05,
-                  marginTop: 2 * s,
+                  marginTop: 1 * s,
                   textTransform: "uppercase",
                 }}
               >
@@ -1240,28 +1166,28 @@ export const BuilderIdCard = memo(
               </div>
               <div
                 style={{
-                  marginTop: 3 * s,
-                  border: `${1.5 * s}px solid #0b6839`,
-                  padding: 2 * s,
+                  marginTop: 2 * s,
+                  border: `${1.25 * s}px solid #0b6839`,
+                  padding: 1.5 * s,
                   background: "#fffbe8",
-                  boxShadow: `${1.5 * s}px ${1.5 * s}px 0 #fee101`,
+                  boxShadow: `${1.25 * s}px ${1.25 * s}px 0 #fee101`,
                   position: "relative",
                   zIndex: 1,
                 }}
               >
                 <FunctionalQr
                   url={publicUrl}
-                  size={Math.round(42 * s)}
+                  size={Math.round(34 * s)}
                   dark="#0b6839"
                   light="#fffbe8"
                 />
               </div>
               <div
                 style={{
-                  marginTop: 2 * s,
+                  marginTop: 1.5 * s,
                   fontFamily: "var(--font-victor-mono), monospace",
-                  fontSize: 4.5 * s,
-                  letterSpacing: "0.1em",
+                  fontSize: 4 * s,
+                  letterSpacing: "0.08em",
                   color: "#0b6839",
                   opacity: 0.55,
                   fontWeight: 700,
@@ -1273,7 +1199,7 @@ export const BuilderIdCard = memo(
 
             <div
               style={{
-                padding: `0 ${3 * s}px`,
+                padding: `0 ${2.5 * s}px`,
                 borderRight: `${1 * s}px dashed #0b683944`,
                 minWidth: 0,
               }}
@@ -1281,9 +1207,9 @@ export const BuilderIdCard = memo(
               <div
                 style={{
                   fontFamily: "var(--font-victor-mono), monospace",
-                  fontSize: 5 * s,
+                  fontSize: 4.5 * s,
                   fontWeight: 700,
-                  letterSpacing: "0.06em",
+                  letterSpacing: "0.05em",
                   color: "#e40014",
                   textAlign: "center",
                 }}
@@ -1292,10 +1218,10 @@ export const BuilderIdCard = memo(
               </div>
               <div
                 style={{
-                  marginTop: 4 * s,
+                  marginTop: 2.5 * s,
                   display: "flex",
                   flexDirection: "column",
-                  gap: 3.5 * s,
+                  gap: 2.5 * s,
                 }}
               >
                 {BEACH_BAG.map(({ Icon, label }) => (
@@ -1304,18 +1230,18 @@ export const BuilderIdCard = memo(
                     style={{
                       display: "flex",
                       alignItems: "center",
-                      gap: 4 * s,
+                      gap: 3 * s,
                       fontFamily: "var(--font-victor-mono), monospace",
-                      fontSize: 6 * s,
+                      fontSize: 5.5 * s,
                       fontWeight: 700,
                       color: "#0b6839",
-                      letterSpacing: "0.04em",
+                      letterSpacing: "0.03em",
                     }}
                   >
                     <span
                       style={{
-                        width: 15 * s,
-                        height: 15 * s,
+                        width: 13 * s,
+                        height: 13 * s,
                         border: `${1 * s}px solid #0b6839`,
                         background: "#fee10144",
                         display: "flex",
@@ -1324,7 +1250,7 @@ export const BuilderIdCard = memo(
                         flexShrink: 0,
                       }}
                     >
-                      <Icon s={11 * s} />
+                      <Icon s={9 * s} />
                     </span>
                     {label}
                   </div>
@@ -1334,7 +1260,7 @@ export const BuilderIdCard = memo(
 
             <div
               style={{
-                padding: `0 ${3 * s}px`,
+                padding: `0 ${2.5 * s}px`,
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
@@ -1344,7 +1270,7 @@ export const BuilderIdCard = memo(
               <div
                 style={{
                   fontFamily: "var(--font-victor-mono), monospace",
-                  fontSize: 5 * s,
+                  fontSize: 4.5 * s,
                   fontWeight: 700,
                   letterSpacing: "0.04em",
                   color: "#e40014",
@@ -1357,11 +1283,11 @@ export const BuilderIdCard = memo(
                 style={{
                   fontFamily: "var(--font-imbue), Imbue, serif",
                   fontWeight: 800,
-                  fontSize: 9 * s,
+                  fontSize: 7.5 * s,
                   color: "#ff0080",
                   textAlign: "center",
-                  lineHeight: 1.1,
-                  marginTop: 2 * s,
+                  lineHeight: 1.05,
+                  marginTop: 1 * s,
                   textTransform: "uppercase",
                 }}
               >
@@ -1369,24 +1295,24 @@ export const BuilderIdCard = memo(
               </div>
               <div
                 style={{
-                  marginTop: 3 * s,
+                  marginTop: 2 * s,
                   background: "#fee101",
                   border: `${1 * s}px solid #000`,
-                  padding: `${1 * s}px ${4 * s}px`,
+                  padding: `${0.75 * s}px ${3 * s}px`,
                   fontFamily: "var(--font-victor-mono), monospace",
-                  fontSize: 4.5 * s,
+                  fontSize: 4 * s,
                   fontWeight: 700,
-                  letterSpacing: "0.12em",
+                  letterSpacing: "0.1em",
                 }}
               >
                 OFFICIAL
               </div>
               <div
                 style={{
-                  marginTop: 3 * s,
+                  marginTop: 2 * s,
                   fontFamily: "var(--font-victor-mono), monospace",
-                  fontSize: 5 * s,
-                  letterSpacing: "0.12em",
+                  fontSize: 4.5 * s,
+                  letterSpacing: "0.1em",
                   color: "#00000066",
                   textAlign: "center",
                 }}
@@ -1397,18 +1323,18 @@ export const BuilderIdCard = memo(
                 style={{
                   fontFamily: "var(--font-victor-mono), monospace",
                   fontWeight: 700,
-                  fontSize: 7 * s,
+                  fontSize: 6 * s,
                   color: "#0b6839",
                   textAlign: "center",
-                  marginTop: 1 * s,
+                  marginTop: 0.5 * s,
                   wordBreak: "break-all",
-                  lineHeight: 1.15,
+                  lineHeight: 1.1,
                 }}
               >
                 {idDisplay}
               </div>
-              <div style={{ marginTop: 2.5 * s }}>
-                <MiniBarcode id={builderId} w={56 * s} h={11 * s} />
+              <div style={{ marginTop: 1.5 * s }}>
+                <MiniBarcode id={builderId} w={48 * s} h={9 * s} />
               </div>
             </div>
           </div>
@@ -1418,17 +1344,17 @@ export const BuilderIdCard = memo(
             style={{
               position: "relative",
               zIndex: 3,
-              marginTop: 3 * s,
+              marginTop: "auto",
               background: "#ff0080",
-              borderTop: `${1.5 * s}px solid #000`,
-              padding: `${5 * s}px ${8 * s}px ${4 * s}px`,
+              borderTop: `${1.25 * s}px solid #000`,
+              padding: `${3 * s}px ${8 * s}px ${2.5 * s}px`,
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
               flexShrink: 0,
               overflow: "hidden",
-              gap: 1 * s,
+              gap: 0.5 * s,
             }}
           >
             <div
@@ -1466,9 +1392,9 @@ export const BuilderIdCard = memo(
                 position: "relative",
                 fontFamily: "var(--font-imbue), Imbue, serif",
                 fontWeight: 800,
-                fontSize: 12 * s,
+                fontSize: 10 * s,
                 color: "#fee101",
-                letterSpacing: "0.14em",
+                letterSpacing: "0.12em",
               }}
             >
               ★ #FRAMEINGOA ★
@@ -1477,8 +1403,8 @@ export const BuilderIdCard = memo(
               style={{
                 position: "relative",
                 fontFamily: "var(--font-victor-mono), monospace",
-                fontSize: 4.5 * s,
-                letterSpacing: "0.16em",
+                fontSize: 4 * s,
+                letterSpacing: "0.14em",
                 color: "#fffbe8",
                 opacity: 0.7,
                 fontWeight: 700,

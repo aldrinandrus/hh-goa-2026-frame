@@ -40,7 +40,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         {
           url: imageUrl,
           width: 1600,
-          height: 2000,
+          height: 1792,
           alt: `${card.name} HH Goa Builder Passport`,
         },
       ],
