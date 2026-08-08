@@ -20,7 +20,11 @@ const victorMono = Victor_Mono({
   preload: true,
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://hhgoa-frame.vercel.app";
+const siteUrl =
+  process.env.NEXT_PUBLIC_APP_URL ??
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : "https://hh-goa-2026-frame-five.vercel.app");
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),

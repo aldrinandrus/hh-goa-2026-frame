@@ -27,6 +27,7 @@ import {
   buildShareTweet,
   downloadDataUrl,
   exportNodeToPng,
+  openTweetIntent,
   sharePassportToX,
 } from "@/utils/download";
 import { persistCard } from "@/utils/persist-card";
@@ -66,6 +67,10 @@ export function CreateStudio() {
   const [persistedImageUrl, setPersistedImageUrl] = useState<string | null>(
     null
   );
+  const [xSharePrompt, setXSharePrompt] = useState<{
+    intentUrl: string;
+    mode: "clipboard" | "download";
+  } | null>(null);
 
   const {
     builderId,
@@ -250,18 +255,13 @@ export function CreateStudio() {
       return;
     }
 
-    // Open tab early so X isn't blocked after async export/persist
-    let shareTab: Window | null = null;
-    if (shareAfter) {
-      shareTab = window.open("about:blank", "_blank");
-    }
-
     setExporting(true);
     setStatus(
       shareAfter ? "Preparing your passport for X…" : "Building your HH Goa pass…"
     );
 
     try {
+      // Capture first (often cached) so clipboard still has user-gesture context
       const dataUrl = await captureExport();
 
       const filename =
@@ -273,47 +273,42 @@ export function CreateStudio() {
         origin ||
         (typeof window !== "undefined" ? window.location.origin : "");
 
-      // Persist first so the public page / OG image is the created passport
       let shareLink = `${base}${builderPublicPath(builderId)}`;
       let shareImageUrl = `${base}/api/cards/${builderId}/image`;
-      let hasPublicImage = false;
-      try {
-        const saved = await persistCard({
-          id: builderId,
-          name: name || "Builder",
-          role: role || "HH Goa Builder",
-          twitter: twitter || undefined,
-          builderTitle,
-          format: mode,
-          imageDataUrl: dataUrl,
-          photoDataUrl: croppedUrl,
+
+      // Persist in background — do not block clipboard/share (X cannot wait on Blob)
+      const persistPromise = persistCard({
+        id: builderId,
+        name: name || "Builder",
+        role: role || "HH Goa Builder",
+        twitter: twitter || undefined,
+        builderTitle,
+        format: mode,
+        imageDataUrl: dataUrl,
+        photoDataUrl: croppedUrl,
+      })
+        .then((saved) => {
+          shareLink = saved.url.startsWith("http")
+            ? saved.url
+            : `${base}${saved.url}`;
+          shareImageUrl = saved.imageUrl?.startsWith("http")
+            ? saved.imageUrl
+            : `${base}${saved.imageUrl || `/api/cards/${builderId}/image`}`;
+          setPersistedPageUrl(shareLink);
+          setPersistedImageUrl(shareImageUrl);
+          return saved;
+        })
+        .catch((err) => {
+          console.warn("Card persist failed", err);
+          setPersistedPageUrl(shareLink);
+          setPersistedImageUrl(null);
+          return null;
         });
-        shareLink = saved.url.startsWith("http")
-          ? saved.url
-          : `${base}${saved.url}`;
-        shareImageUrl = saved.imageUrl?.startsWith("http")
-          ? saved.imageUrl
-          : `${base}${saved.imageUrl || `/api/cards/${builderId}/image`}`;
-        hasPublicImage = Boolean(saved.publicImage);
-        setPersistedPageUrl(shareLink);
-        setPersistedImageUrl(shareImageUrl);
-      } catch (err) {
-        console.warn("Card persist failed", err);
-        setPersistedPageUrl(shareLink);
-        setPersistedImageUrl(null);
-      }
 
       if (!shareAfter) {
+        await persistPromise;
         downloadDataUrl(dataUrl, filename);
       } else {
-        if (!hasPublicImage) {
-          // Without Blob on Vercel, OG URLs 404 — download PNG so user can attach
-          downloadDataUrl(dataUrl, filename);
-          setStatus(
-            "Passport downloaded — attach that PNG in the X compose window (set BLOB_READ_WRITE_TOKEN on Vercel for automatic image cards)."
-          );
-        }
-
         const tweet = buildShareTweet({
           mode,
           name,
@@ -322,14 +317,30 @@ export function CreateStudio() {
           twitter,
         });
 
-        await sharePassportToX({
+        // Copy/share BEFORE awaiting persist — clipboard needs a fresh gesture
+        const shareResult = await sharePassportToX({
           dataUrl,
           filename,
           text: tweet,
           pageUrl: shareLink,
           imageUrl: shareImageUrl,
-          shareTab,
         });
+
+        void persistPromise;
+
+        if (shareResult.method === "native") {
+          setStatus(null);
+        } else {
+          setXSharePrompt({
+            intentUrl: shareResult.intentUrl,
+            mode: shareResult.method,
+          });
+          setStatus(
+            shareResult.method === "clipboard"
+              ? "Passport copied — open X, then press Ctrl+V (⌘V) to attach the image."
+              : "Passport downloaded — drag the PNG into your X post."
+          );
+        }
       }
 
       setResultUrl(dataUrl);
@@ -337,7 +348,6 @@ export function CreateStudio() {
       if (!shareAfter) setStatus(null);
     } catch (e) {
       console.error(e);
-      if (shareTab && !shareTab.closed) shareTab.close();
       setStatus("Export failed — try again in a moment.");
     } finally {
       setExporting(false);
@@ -348,6 +358,16 @@ export function CreateStudio() {
     <div className="relative min-h-[100dvh] bg-[#fffbe8]">
       <FloatingBackground />
       <Navbar />
+
+      {xSharePrompt ? (
+        <SharePasteModal
+          mode={xSharePrompt.mode}
+          onOpenX={() => {
+            openTweetIntent(xSharePrompt.intentUrl);
+          }}
+          onClose={() => setXSharePrompt(null)}
+        />
+      ) : null}
 
       <main className="relative z-10 mx-auto max-w-6xl px-4 pb-28 pt-2 sm:px-6 sm:pt-4">
         {step !== "result" ? (
@@ -630,21 +650,27 @@ export function CreateStudio() {
                 mode === "frame"
                   ? `HH-Goa-2026-Frame-${builderId}.png`
                   : `HH-Goa-2026-Passport-${builderId}.png`;
-              const shareTab = window.open("about:blank", "_blank");
-              void sharePassportToX({
-                dataUrl: resultUrl,
-                filename,
-                text: tweet,
-                pageUrl: shareLink,
-                imageUrl: shareImageUrl,
-                shareTab,
-              });
+              void (async () => {
+                const shareResult = await sharePassportToX({
+                  dataUrl: resultUrl,
+                  filename,
+                  text: tweet,
+                  pageUrl: shareLink,
+                  imageUrl: shareImageUrl,
+                });
+                if (shareResult.method === "native") return;
+                setXSharePrompt({
+                  intentUrl: shareResult.intentUrl,
+                  mode: shareResult.method,
+                });
+              })();
             }}
             onAnother={() => {
               setStep(1);
               setResultUrl(null);
               setPersistedPageUrl(null);
               setPersistedImageUrl(null);
+              setXSharePrompt(null);
               exportCacheRef.current = null;
               exportInflightRef.current = null;
               const prev = previewUrlRef.current;
@@ -695,6 +721,73 @@ export function CreateStudio() {
             />
           </>
         ) : null}
+      </div>
+    </div>
+  );
+}
+
+function SharePasteModal({
+  mode,
+  onOpenX,
+  onClose,
+}: {
+  mode: "clipboard" | "download";
+  onOpenX: () => void;
+  onClose: () => void;
+}) {
+  const isMac =
+    typeof navigator !== "undefined" &&
+    /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+  const pasteKey = isMac ? "⌘V" : "Ctrl+V";
+
+  return (
+    <div
+      className="fixed inset-0 z-[80] flex items-center justify-center bg-black/45 p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="x-share-title"
+    >
+      <div className="w-full max-w-md border-2 border-black bg-[#fffbe8] p-5 shadow-[8px_8px_0_#ff0080] sm:p-6">
+        <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.25em] text-[#0b6839]">
+          Share to X
+        </p>
+        <h2
+          id="x-share-title"
+          className="mt-2 font-[family-name:var(--font-imbue)] text-3xl font-extrabold tracking-tight text-black"
+        >
+          {mode === "clipboard"
+            ? "Passport copied"
+            : "Passport downloaded"}
+        </h2>
+        <ol className="mt-4 space-y-2 text-left font-mono text-sm text-black/75">
+          <li>1. Tap Open X below — your tweet text is ready.</li>
+          <li>
+            2.{" "}
+            {mode === "clipboard"
+              ? `Click the tweet box and press ${pasteKey} to attach the image.`
+              : "Drag the downloaded PNG into the tweet to attach it."}
+          </li>
+          <li>3. Post — the passport sits under your tweet.</li>
+        </ol>
+        <div className="mt-6 flex flex-col gap-2 sm:flex-row">
+          <Button
+            size="lg"
+            variant="green"
+            className="min-h-12 flex-1"
+            onClick={onOpenX}
+          >
+            <Share2 />
+            Open X
+          </Button>
+          <Button
+            size="lg"
+            variant="outline"
+            className="min-h-12 flex-1"
+            onClick={onClose}
+          >
+            Done
+          </Button>
+        </div>
       </div>
     </div>
   );

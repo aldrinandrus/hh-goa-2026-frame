@@ -86,34 +86,74 @@ export function dataUrlToFile(dataUrl: string, filename: string): File {
   });
 }
 
-async function warmPublicUrls(...urls: (string | undefined)[]) {
-  await Promise.all(
-    urls
-      .filter((u): u is string => Boolean(u && u.startsWith("http")))
-      .map((u) =>
-        fetch(u, { mode: "no-cors", cache: "no-store" }).catch(() => undefined)
-      )
-  );
+function isMobileShareDevice() {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent || "";
+  if (/Android|iPhone|iPad|iPod/i.test(ua)) return true;
+  // iPadOS desktop UA — still has touch share sheet
+  if (
+    navigator.platform === "MacIntel" &&
+    typeof navigator.maxTouchPoints === "number" &&
+    navigator.maxTouchPoints > 1
+  ) {
+    return true;
+  }
+  return false;
 }
+
+/** Copy PNG bytes so X compose can attach them via Ctrl/⌘+V. */
+export async function copyPngToClipboard(dataUrl: string): Promise<boolean> {
+  if (typeof navigator === "undefined" || !navigator.clipboard?.write) {
+    return false;
+  }
+  if (typeof ClipboardItem === "undefined") return false;
+
+  const blob = dataUrlToBlob(dataUrl);
+  const pngBlob =
+    blob.type === "image/png"
+      ? blob
+      : new Blob([blob], { type: "image/png" });
+
+  try {
+    await navigator.clipboard.write([
+      new ClipboardItem({ "image/png": pngBlob }),
+    ]);
+    return true;
+  } catch {
+    /* try promise form — required by Chromium in some versions */
+  }
+
+  try {
+    await navigator.clipboard.write([
+      new ClipboardItem({ "image/png": Promise.resolve(pngBlob) }),
+    ]);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export type ShareToXResult =
+  | { method: "native" }
+  | { method: "clipboard"; intentUrl: string }
+  | { method: "download"; intentUrl: string };
 
 /**
  * Share passport/frame to X with the created image under the post.
- * X web intent cannot upload media bytes, so we:
- * 1) native share sheet with the PNG file when possible (real media attach),
- * 2) else open compose with tweet text + public page URL so X can unfurl
- *    the `summary_large_image` OG card (requires Blob + working /builder/[id]).
+ *
+ * X web intent cannot upload media. Working paths:
+ * 1) Mobile: OS share sheet with the PNG file
+ * 2) Desktop: copy PNG to clipboard → open compose → user pastes (Ctrl/⌘+V)
+ * 3) Fallback: download PNG + open compose for manual attach
  */
 export async function sharePassportToX(opts: {
   dataUrl: string;
   filename: string;
   text: string;
-  /** Public builder page — used for X large-image card unfurl */
+  /** Public builder page — appended for OG unfurl when available */
   pageUrl?: string;
-  /** Absolute PNG URL — warmed so crawlers can fetch it */
   imageUrl?: string;
-  /** Pre-opened tab to avoid popup blockers after await */
-  shareTab?: Window | null;
-}): Promise<"native" | "intent"> {
+}): Promise<ShareToXResult> {
   const blob = dataUrlToBlob(opts.dataUrl);
   const file = new File([blob], opts.filename, {
     type: "image/png",
@@ -123,47 +163,56 @@ export async function sharePassportToX(opts: {
   const text = opts.text.trim();
   const filePayload = { files: [file], text, title: "HH Goa 2026" };
 
-  // Prefer OS share with the PNG attached (image appears under the tweet on X)
-  if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+  // Mobile only — desktop Windows share often drops the file when targeting X
+  if (
+    isMobileShareDevice() &&
+    typeof navigator !== "undefined" &&
+    typeof navigator.share === "function"
+  ) {
     try {
       const canFiles =
         typeof navigator.canShare !== "function" ||
         navigator.canShare(filePayload);
       if (canFiles) {
         await navigator.share(filePayload);
-        if (opts.shareTab && !opts.shareTab.closed) opts.shareTab.close();
-        return "native";
+        return { method: "native" };
       }
     } catch (err) {
       if ((err as Error)?.name === "AbortError") {
-        if (opts.shareTab && !opts.shareTab.closed) opts.shareTab.close();
-        return "native";
+        return { method: "native" };
       }
-      /* fall through to intent + OG page URL */
+      /* fall through */
     }
   }
 
-  // Warm public URLs so the first X scrape is more likely to succeed
-  await warmPublicUrls(opts.pageUrl, opts.imageUrl);
-
-  // Compose intent: page URL drives summary_large_image card under the tweet
-  const intent = buildTweetIntent({
+  const intentUrl = buildTweetIntent({
     text,
     url:
       opts.pageUrl && !text.includes(opts.pageUrl) ? opts.pageUrl : undefined,
   });
-  if (opts.shareTab && !opts.shareTab.closed) {
-    opts.shareTab.location.href = intent;
-  } else {
-    const link = document.createElement("a");
-    link.href = intent;
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
+
+  // Copy BEFORE opening X — must stay in the user-gesture chain as much as possible
+  const copied = await copyPngToClipboard(opts.dataUrl);
+  if (copied) {
+    return { method: "clipboard", intentUrl };
   }
-  return "intent";
+
+  downloadDataUrl(opts.dataUrl, opts.filename);
+  return { method: "download", intentUrl };
+}
+
+export function openTweetIntent(intentUrl: string, target?: Window | null) {
+  if (target && !target.closed) {
+    target.location.href = intentUrl;
+    return;
+  }
+  const link = document.createElement("a");
+  link.href = intentUrl;
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
 }
 
 export function buildTweetIntent(opts: {
@@ -175,19 +224,13 @@ export function buildTweetIntent(opts: {
   params.set("text", opts.text);
   if (opts.url) params.set("url", opts.url);
   if (opts.hashtags?.length) params.set("hashtags", opts.hashtags.join(","));
-  return `https://twitter.com/intent/tweet?${params.toString()}`;
+  // x.com intent is more reliable for the current compose UI
+  return `https://x.com/intent/post?${params.toString()}`;
 }
 
 /** Open X compose without popup-blocker issues after async work. */
 export function openTweetComposer(text: string) {
-  const intent = buildTweetIntent({ text });
-  const link = document.createElement("a");
-  link.href = intent;
-  link.target = "_blank";
-  link.rel = "noopener noreferrer";
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
+  openTweetIntent(buildTweetIntent({ text }));
 }
 
 /** Well-presented X post copy (matches HH Goa share style). */

@@ -23,7 +23,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const description = `${card.name} — ${card.role} · Builder No. ${card.id} · ${EVENT_META.place}`;
   // Absolute URLs so X can unfurl the passport image under the tweet
   const site =
-    getServerAppUrl() || "https://hhgoa-frame.vercel.app";
+    getServerAppUrl() || "https://hh-goa-2026-frame-five.vercel.app";
   const imageUrl = card.imageDataUrl.startsWith("http")
     ? card.imageDataUrl
     : `${site}/api/cards/${card.id}/image`;
