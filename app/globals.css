@@ -34,6 +34,8 @@
 html {
   background-color: #fffbe8;
   scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: #0b6839 #fffbe8;
 }
 
 body {
@@ -46,6 +48,41 @@ body {
 ::selection {
   background: #fee101;
   color: #000;
+}
+
+/* HH Goa scrollbar — cream track, green thumb, no arrow buttons */
+*::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+*::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+*::-webkit-scrollbar-track {
+  background: #fffbe8;
+  border-left: 1.5px solid #000;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #0b6839;
+  border: 1.5px solid #000;
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 1.5px #fee101;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #ff0080;
+  box-shadow: inset 0 0 0 1.5px #fee101;
+}
+
+*::-webkit-scrollbar-corner {
+  background: #fffbe8;
+  border-left: 1.5px solid #000;
+  border-top: 1.5px solid #000;
 }
 
 :focus-visible {

@@ -1,6 +1,7 @@
 "use client";
 
 import { memo } from "react";
+import { PalmSilhouette, SunRays } from "@/components/shared/Decorations";
 
 /**
  * Stable decorative background — CSS transforms only.
@@ -32,6 +33,34 @@ export const FloatingBackground = memo(function FloatingBackground() {
         className="hh-float-c absolute bottom-10 left-1/3 h-64 w-64 rounded-full bg-[#ff0080]/10 blur-3xl"
         style={{ transform: "translate3d(0,0,0)" }}
       />
+
+      {/* Rising sun — top right */}
+      <div className="hh-float-y absolute -right-6 top-8 w-36 opacity-50 sm:top-12 sm:w-48 sm:opacity-60">
+        <SunRays className="w-full" color="#fee101" />
+      </div>
+      {/* Soft second sun wash — top center */}
+      <div className="absolute left-1/2 top-0 w-28 -translate-x-1/2 opacity-25 sm:w-40">
+        <SunRays className="w-full" color="#fee101" />
+      </div>
+
+      {/* Coconut palms */}
+      <PalmSilhouette
+        className="hh-float-y absolute -bottom-4 -left-2 h-44 w-28 opacity-[0.18] sm:h-56 sm:w-36 sm:opacity-[0.22]"
+        color="#0b6839"
+      />
+      <PalmSilhouette
+        className="absolute -bottom-8 left-10 h-36 w-24 -scale-x-100 opacity-[0.12] sm:left-16 sm:h-44 sm:w-28"
+        color="#0b6839"
+      />
+      <PalmSilhouette
+        className="hh-float-y absolute -bottom-6 -right-3 h-48 w-32 -scale-x-100 opacity-[0.16] sm:h-60 sm:w-40 sm:opacity-[0.2]"
+        color="#0b6839"
+      />
+      <PalmSilhouette
+        className="absolute bottom-0 right-14 h-32 w-20 opacity-[0.1] sm:right-24 sm:h-40 sm:w-24"
+        color="#ff0080"
+      />
+
       <div
         className="absolute inset-0 opacity-[0.04] mix-blend-multiply"
         style={{

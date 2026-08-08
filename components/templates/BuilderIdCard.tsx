@@ -8,8 +8,6 @@ import {
   PalmSilhouette,
   SunRays,
 } from "@/components/shared/Decorations";
-import { FunctionalQr } from "@/components/shared/FunctionalQr";
-import { builderPublicUrl } from "@/lib/site";
 import { EVENT_META } from "@/lib/design-tokens";
 
 export interface BuilderPassportProps {
@@ -21,13 +19,14 @@ export interface BuilderPassportProps {
   builderId: string;
   width?: number;
   className?: string;
-  /** Absolute URL for QR — defaults to public builder page */
+  /** @deprecated QR removed from passport — kept for call-site compat */
   qrUrl?: string;
 }
 
 /**
  * HH Goa 2026 Builder Passport — festival travel document.
  * Canvas 4:5. Export at pixelRatio 2 → 1600×2000 from width 800.
+ * Layout is deliberately compact so every block stays inside the frame.
  */
 export const BuilderIdCard = memo(
   forwardRef<HTMLDivElement, BuilderPassportProps>(function BuilderIdCard(
@@ -40,15 +39,16 @@ export const BuilderIdCard = memo(
       builderId,
       width = 360,
       className,
-      qrUrl,
     },
     ref
   ) {
     const height = Math.round(width * 1.25); // 4:5
     const s = width / 360;
-    const publicUrl = qrUrl || builderPublicUrl(builderId);
     const displayName = (name || "YOUR NAME").toUpperCase();
-    const handle = twitter ? `@${twitter.replace(/^@/, "")}` : null;
+    const handleRaw = (twitter || "").trim().replace(/^@/, "");
+    const handle = handleRaw ? `@${handleRaw}` : null;
+    const photoW = width * 0.34;
+    const photoH = width * 0.36;
 
     const paperNoise =
       "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E\")";
@@ -62,7 +62,7 @@ export const BuilderIdCard = memo(
           width,
           height,
           position: "relative",
-          // Pink offset shadow + yellow hard edge — print festival feel
+          overflow: "hidden",
           boxShadow: `${6 * s}px ${6 * s}px 0 #ff0080, ${10 * s}px ${10 * s}px 0 #fee10155`,
         }}
       >
@@ -77,7 +77,7 @@ export const BuilderIdCard = memo(
           }}
         />
 
-        {/* Cream paper body */}
+        {/* Cream paper body — clipped to the frame */}
         <div
           style={{
             position: "absolute",
@@ -87,9 +87,9 @@ export const BuilderIdCard = memo(
             overflow: "hidden",
             display: "flex",
             flexDirection: "column",
+            boxSizing: "border-box",
           }}
         >
-          {/* Paper grain */}
           <div
             style={{
               position: "absolute",
@@ -102,19 +102,76 @@ export const BuilderIdCard = memo(
             }}
           />
 
-          {/* Subtle sun watermark */}
+          {/* Soft Goa atmosphere — watermarks only, behind all content */}
           <div
             style={{
               position: "absolute",
-              top: -8 * s,
-              right: -10 * s,
-              width: 110 * s,
-              opacity: 0.18,
+              inset: 0,
               zIndex: 0,
               pointerEvents: "none",
+              overflow: "hidden",
             }}
+            aria-hidden
           >
-            <SunRays />
+            <div
+              style={{
+                position: "absolute",
+                top: -6 * s,
+                right: -8 * s,
+                width: 100 * s,
+                opacity: 0.2,
+              }}
+            >
+              <SunRays />
+            </div>
+            <div
+              style={{
+                position: "absolute",
+                top: 38 * s,
+                left: -18 * s,
+                width: 70 * s,
+                opacity: 0.1,
+              }}
+            >
+              <SunRays />
+            </div>
+            <div
+              style={{
+                position: "absolute",
+                bottom: 28 * s,
+                left: -6 * s,
+                width: 52 * s,
+                opacity: 0.12,
+              }}
+            >
+              <PalmSilhouette className="h-full w-full" color="#0b6839" />
+            </div>
+            <div
+              style={{
+                position: "absolute",
+                bottom: 22 * s,
+                right: -8 * s,
+                width: 58 * s,
+                opacity: 0.1,
+                transform: "scaleX(-1)",
+              }}
+            >
+              <PalmSilhouette className="h-full w-full" color="#0b6839" />
+            </div>
+            <div
+              style={{
+                position: "absolute",
+                top: "42%",
+                left: "50%",
+                width: 120 * s,
+                height: 120 * s,
+                marginLeft: -60 * s,
+                marginTop: -60 * s,
+                borderRadius: "50%",
+                background:
+                  "radial-gradient(circle, #fee10122 0%, #ff00800a 45%, transparent 70%)",
+              }}
+            />
           </div>
 
           {/* HEADER */}
@@ -125,7 +182,8 @@ export const BuilderIdCard = memo(
               display: "flex",
               justifyContent: "space-between",
               alignItems: "flex-start",
-              padding: `${10 * s}px ${12 * s}px ${6 * s}px`,
+              padding: `${7 * s}px ${10 * s}px ${4 * s}px`,
+              flexShrink: 0,
             }}
           >
             <div>
@@ -133,7 +191,7 @@ export const BuilderIdCard = memo(
                 style={{
                   fontFamily: "var(--font-imbue), Imbue, serif",
                   fontWeight: 800,
-                  fontSize: 42 * s,
+                  fontSize: 34 * s,
                   lineHeight: 0.85,
                   color: "#0b6839",
                   letterSpacing: "-0.03em",
@@ -144,11 +202,11 @@ export const BuilderIdCard = memo(
               <div
                 style={{
                   fontFamily: "var(--font-victor-mono), monospace",
-                  fontSize: 9 * s,
+                  fontSize: 8 * s,
                   fontWeight: 700,
-                  letterSpacing: "0.22em",
+                  letterSpacing: "0.2em",
                   color: "#000",
-                  marginTop: 2 * s,
+                  marginTop: 1 * s,
                 }}
               >
                 GOA 2026
@@ -158,9 +216,9 @@ export const BuilderIdCard = memo(
               <div
                 style={{
                   fontFamily: "var(--font-victor-mono), monospace",
-                  fontSize: 8 * s,
+                  fontSize: 7 * s,
                   fontWeight: 700,
-                  letterSpacing: "0.14em",
+                  letterSpacing: "0.12em",
                   color: "#0b6839",
                 }}
               >
@@ -169,11 +227,11 @@ export const BuilderIdCard = memo(
               <div
                 style={{
                   fontFamily: "var(--font-victor-mono), monospace",
-                  fontSize: 7 * s,
-                  letterSpacing: "0.08em",
+                  fontSize: 6 * s,
+                  letterSpacing: "0.06em",
                   color: "#00000099",
-                  marginTop: 4 * s,
-                  lineHeight: 1.35,
+                  marginTop: 2 * s,
+                  lineHeight: 1.3,
                 }}
               >
                 {EVENT_META.place}
@@ -182,16 +240,16 @@ export const BuilderIdCard = memo(
               </div>
               <div
                 style={{
-                  marginTop: 6 * s,
+                  marginTop: 4 * s,
                   display: "inline-block",
                   background: "#fee101",
-                  border: `${1.5 * s}px solid #000`,
-                  padding: `${2 * s}px ${6 * s}px`,
+                  border: `${1.25 * s}px solid #000`,
+                  padding: `${1.5 * s}px ${5 * s}px`,
                   fontFamily: "var(--font-victor-mono), monospace",
-                  fontSize: 7 * s,
+                  fontSize: 6 * s,
                   fontWeight: 700,
-                  letterSpacing: "0.1em",
-                  boxShadow: `${2 * s}px ${2 * s}px 0 #ff0080`,
+                  letterSpacing: "0.08em",
+                  boxShadow: `${1.5 * s}px ${1.5 * s}px 0 #ff0080`,
                 }}
               >
                 OFFICIAL BUILDER
@@ -199,45 +257,43 @@ export const BuilderIdCard = memo(
             </div>
           </header>
 
-          <div style={{ padding: `0 ${12 * s}px` }}>
-            <TicketPerforation className="w-full h-2" />
+          <div style={{ padding: `0 ${10 * s}px`, flexShrink: 0 }}>
+            <TicketPerforation className="w-full h-1.5" />
           </div>
 
-          {/* PHOTO — passport treatment (sized to leave room for identity + X) */}
+          {/* PHOTO */}
           <div
             style={{
               position: "relative",
               zIndex: 2,
               display: "flex",
               justifyContent: "center",
-              padding: `${6 * s}px ${16 * s}px ${2 * s}px`,
+              padding: `${4 * s}px ${12 * s}px ${2 * s}px`,
               flexShrink: 0,
             }}
           >
-            {/* Pink offset behind photo */}
             <div
               style={{
                 position: "absolute",
-                width: width * 0.44,
-                height: width * 0.5,
+                width: photoW,
+                height: photoH,
                 background: "#ff0080",
-                borderRadius: `${18 * s}px ${6 * s}px ${22 * s}px ${8 * s}px`,
-                transform: `translate(${4 * s}px, ${4 * s}px)`,
+                borderRadius: `${12 * s}px ${5 * s}px ${16 * s}px ${6 * s}px`,
+                transform: `translate(${3 * s}px, ${3 * s}px)`,
                 zIndex: 0,
               }}
             />
-            {/* Yellow border plate */}
             <div
               style={{
                 position: "relative",
                 zIndex: 1,
-                width: width * 0.44,
-                height: width * 0.5,
+                width: photoW,
+                height: photoH,
                 background: "#fee101",
-                border: `${2 * s}px solid #000`,
-                borderRadius: `${18 * s}px ${6 * s}px ${22 * s}px ${8 * s}px`,
-                padding: 4 * s,
-                boxShadow: `${3 * s}px ${3 * s}px 0 #0b6839`,
+                border: `${1.75 * s}px solid #000`,
+                borderRadius: `${12 * s}px ${5 * s}px ${16 * s}px ${6 * s}px`,
+                padding: 3 * s,
+                boxShadow: `${2 * s}px ${2 * s}px 0 #0b6839`,
               }}
             >
               <div
@@ -245,8 +301,8 @@ export const BuilderIdCard = memo(
                   width: "100%",
                   height: "100%",
                   overflow: "hidden",
-                  borderRadius: `${14 * s}px ${4 * s}px ${18 * s}px ${6 * s}px`,
-                  border: `${1.5 * s}px solid #0b6839`,
+                  borderRadius: `${9 * s}px ${3 * s}px ${12 * s}px ${4 * s}px`,
+                  border: `${1.25 * s}px solid #0b6839`,
                   background: "#0b6839",
                 }}
               >
@@ -266,37 +322,36 @@ export const BuilderIdCard = memo(
               </div>
             </div>
 
-            {/* Floating stamps */}
             <div
               style={{
                 position: "absolute",
-                left: 8 * s,
-                bottom: -2 * s,
+                left: 6 * s,
+                bottom: 0,
                 zIndex: 3,
               }}
             >
               <PassportStamp
                 label="HH GOA"
                 sublabel="2026"
-                rotate={-18}
+                rotate={-16}
                 variant="green"
-                size={48 * s}
+                size={36 * s}
               />
             </div>
             <div
               style={{
                 position: "absolute",
-                right: 6 * s,
-                top: 2 * s,
+                right: 4 * s,
+                top: 0,
                 zIndex: 3,
               }}
             >
               <PassportStamp
                 label="VERIFIED"
                 sublabel="BUILDER"
-                rotate={14}
+                rotate={12}
                 variant="pink"
-                size={44 * s}
+                size={34 * s}
               />
             </div>
           </div>
@@ -306,9 +361,13 @@ export const BuilderIdCard = memo(
             style={{
               position: "relative",
               zIndex: 2,
-              padding: `${8 * s}px ${14 * s}px 0`,
-              textAlign: "center",
+              padding: `${5 * s}px ${12 * s}px 0`,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
               flexShrink: 0,
+              width: "100%",
+              boxSizing: "border-box",
             }}
           >
             <div
@@ -316,13 +375,16 @@ export const BuilderIdCard = memo(
                 fontFamily: "var(--font-imbue), Imbue, serif",
                 fontWeight: 800,
                 fontSize: Math.min(
-                  32 * s,
-                  (width * 0.88) / Math.max(displayName.length * 0.42, 8)
+                  26 * s,
+                  (width * 0.8) / Math.max(displayName.length * 0.42, 8)
                 ),
                 lineHeight: 0.95,
                 color: "#000",
                 letterSpacing: "-0.02em",
                 textTransform: "uppercase",
+                textAlign: "center",
+                maxWidth: "100%",
+                wordBreak: "break-word",
               }}
             >
               {displayName}
@@ -330,105 +392,178 @@ export const BuilderIdCard = memo(
             <div
               style={{
                 fontFamily: "var(--font-victor-mono), monospace",
-                fontSize: 10 * s,
+                fontSize: 8.5 * s,
                 fontWeight: 600,
                 color: "#0b6839",
                 letterSpacing: "0.12em",
-                marginTop: 5 * s,
+                marginTop: 3 * s,
                 textTransform: "uppercase",
+                textAlign: "center",
               }}
             >
               {role || "ROLE / STACK"}
             </div>
-            {/* Title + X handle on one centered, vertically aligned row */}
             <div
               style={{
-                marginTop: 8 * s,
-                display: "flex",
-                flexWrap: "wrap",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: `${6 * s}px ${10 * s}px`,
+                marginTop: 5 * s,
+                fontFamily: "var(--font-imbue), Imbue, serif",
+                fontWeight: 700,
+                fontSize: 13 * s,
+                lineHeight: 1,
+                color: "#ff0080",
+                letterSpacing: "0.05em",
+                textTransform: "uppercase",
+                textAlign: "center",
+                borderBottom: `${1.75 * s}px solid #fee101`,
+                paddingBottom: 2 * s,
+                maxWidth: "92%",
               }}
             >
+              {builderTitle}
+            </div>
+            {handle ? (
               <div
                 style={{
-                  fontFamily: "var(--font-imbue), Imbue, serif",
+                  marginTop: 6 * s,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 5 * s,
+                  background: "#000",
+                  color: "#fee101",
+                  fontFamily: "var(--font-victor-mono), monospace",
+                  fontSize: 10 * s,
                   fontWeight: 700,
-                  fontSize: 16 * s,
-                  lineHeight: 1,
-                  color: "#ff0080",
                   letterSpacing: "0.04em",
-                  textTransform: "uppercase",
-                  borderBottom: `${2 * s}px solid #fee101`,
-                  paddingBottom: 2 * s,
+                  lineHeight: 1,
+                  padding: `${4 * s}px ${9 * s}px`,
+                  borderRadius: 2 * s,
+                  border: `${1.5 * s}px solid #fee101`,
+                  boxShadow: `${2 * s}px ${2 * s}px 0 #ff0080`,
                 }}
               >
-                {builderTitle}
+                <span aria-hidden style={{ color: "#fffbe8", lineHeight: 1 }}>
+                  𝕏
+                </span>
+                {handle}
               </div>
-              {handle ? (
-                <div
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 5 * s,
-                    background: "#000",
-                    color: "#fee101",
-                    fontFamily: "var(--font-victor-mono), monospace",
-                    fontSize: 10 * s,
-                    fontWeight: 700,
-                    letterSpacing: "0.04em",
-                    lineHeight: 1,
-                    padding: `${5 * s}px ${9 * s}px`,
-                    borderRadius: 2 * s,
-                    border: `${1.5 * s}px solid #0b6839`,
-                    boxShadow: `${2 * s}px ${2 * s}px 0 #ff0080`,
-                    flexShrink: 0,
-                  }}
-                >
-                  <span aria-hidden style={{ color: "#fffbe8", lineHeight: 1 }}>
-                    𝕏
-                  </span>
-                  {handle}
-                </div>
-              ) : null}
-            </div>
+            ) : null}
           </div>
 
-          {/* Mid decorative wave */}
           <div
             style={{
-              padding: `${6 * s}px ${20 * s}px 0`,
+              padding: `${4 * s}px ${20 * s}px 0`,
               opacity: 0.35,
               zIndex: 2,
               position: "relative",
+              flexShrink: 0,
             }}
           >
-            <WaveLine className="w-full h-3" />
+            <WaveLine className="w-full h-2" />
           </div>
 
-          {/* FOOTER: ID + stamps + QR — padded so QR never clips the frame */}
+          {/* Mission chips — compact, no outer shadow that escapes the frame */}
           <div
             style={{
-              marginTop: "auto",
               position: "relative",
               zIndex: 2,
-              padding: `${6 * s}px ${14 * s}px ${8 * s}px`,
-              display: "flex",
-              alignItems: "flex-end",
-              justifyContent: "space-between",
-              gap: 10 * s,
-              boxSizing: "border-box",
-              width: "100%",
-              overflow: "visible",
+              margin: `${5 * s}px ${10 * s}px 0`,
+              background: "#fee101",
+              border: `${1.25 * s}px solid #000`,
+              padding: `${5 * s}px ${6 * s}px`,
+              flexShrink: 0,
             }}
           >
-            <div style={{ flex: 1, minWidth: 0, paddingRight: 4 * s }}>
+            <div
+              style={{
+                display: "flex",
+                gap: 4 * s,
+              }}
+            >
+              {(
+                [
+                  { label: "VALID", tone: "#0b6839" },
+                  { label: "BUILD", tone: "#000" },
+                  { label: "SHIP", tone: "#e40014" },
+                ] as const
+              ).map((chip) => (
+                <div
+                  key={chip.label}
+                  style={{
+                    flex: 1,
+                    textAlign: "center",
+                    fontFamily: "var(--font-victor-mono), monospace",
+                    fontSize: 7 * s,
+                    fontWeight: 700,
+                    letterSpacing: "0.12em",
+                    color: chip.tone,
+                    background: "#fffbe8",
+                    border: `${1 * s}px solid #000`,
+                    padding: `${2.5 * s}px 0`,
+                  }}
+                >
+                  {chip.label}
+                </div>
+              ))}
+            </div>
+            <div
+              style={{
+                marginTop: 4 * s,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 6 * s,
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: "var(--font-imbue), Imbue, serif",
+                  fontWeight: 800,
+                  fontSize: 12 * s,
+                  letterSpacing: "0.04em",
+                  color: "#000",
+                  lineHeight: 1,
+                }}
+              >
+                {EVENT_META.hashtag}
+              </span>
+              <span
+                style={{
+                  fontFamily: "var(--font-victor-mono), monospace",
+                  fontSize: 6 * s,
+                  fontWeight: 700,
+                  letterSpacing: "0.08em",
+                  color: "#0b6839",
+                  textAlign: "right",
+                  lineHeight: 1.2,
+                }}
+              >
+                {EVENT_META.dates}
+              </span>
+            </div>
+          </div>
+
+          {/* Spacer pushes footer to the bottom without overflowing */}
+          <div style={{ flex: "1 1 auto", minHeight: 4 * s }} />
+
+          {/* FOOTER */}
+          <div
+            style={{
+              position: "relative",
+              zIndex: 2,
+              padding: `${2 * s}px ${10 * s}px ${5 * s}px`,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 8 * s,
+              flexShrink: 0,
+            }}
+          >
+            <div style={{ minWidth: 0 }}>
               <div
                 style={{
                   fontFamily: "var(--font-victor-mono), monospace",
-                  fontSize: 7 * s,
-                  letterSpacing: "0.2em",
+                  fontSize: 6 * s,
+                  letterSpacing: "0.18em",
                   color: "#00000066",
                   textTransform: "uppercase",
                 }}
@@ -439,71 +574,31 @@ export const BuilderIdCard = memo(
                 style={{
                   fontFamily: "var(--font-victor-mono), monospace",
                   fontWeight: 700,
-                  fontSize: 15 * s,
+                  fontSize: 13 * s,
                   color: "#0b6839",
-                  letterSpacing: "0.04em",
+                  letterSpacing: "0.03em",
+                  marginTop: 1 * s,
                 }}
               >
                 {builderId}
               </div>
-              <div
-                style={{
-                  marginTop: 4 * s,
-                  display: "flex",
-                  gap: 4 * s,
-                  alignItems: "center",
-                }}
-              >
-                <PassportStamp
-                  label="GOA"
-                  sublabel="28 OCT"
-                  rotate={-8}
-                  variant="yellow"
-                  size={32 * s}
-                />
-                <PassportStamp
-                  label="BUILD"
-                  sublabel="SHIP"
-                  rotate={6}
-                  variant="red"
-                  size={30 * s}
-                />
-              </div>
-              <div
-                style={{
-                  marginTop: 5 * s,
-                  fontFamily: "var(--font-victor-mono), monospace",
-                  fontSize: 6 * s,
-                  letterSpacing: "0.08em",
-                  color: "#00000055",
-                }}
-              >
-                15.2993° N · 74.1240° E · #FrameInGoa
-              </div>
             </div>
-
             <div
               style={{
                 display: "flex",
-                flexDirection: "column",
                 alignItems: "center",
-                gap: 2 * s,
+                gap: 4 * s,
                 flexShrink: 0,
-                paddingBottom: 2 * s,
               }}
             >
-              <FunctionalQr url={publicUrl} size={Math.round(58 * s)} />
-              <span
-                style={{
-                  fontFamily: "var(--font-victor-mono), monospace",
-                  fontSize: 5.5 * s,
-                  letterSpacing: "0.1em",
-                  color: "#00000066",
-                  textTransform: "uppercase",
-                }}
-              >
-                Scan pass
-              </span>
+              <PassportStamp
+                label="GOA"
+                sublabel="28 OCT"
+                rotate={-8}
+                variant="yellow"
+                size={28 * s}
+              />
+              <PalmSilhouette className="h-7 w-5 opacity-35" color="#0b6839" />
             </div>
           </div>
 
@@ -513,28 +608,26 @@ export const BuilderIdCard = memo(
               position: "relative",
               zIndex: 2,
               background: "#0b6839",
-              borderTop: `${2 * s}px solid #fee101`,
-              padding: `${5 * s}px ${10 * s}px`,
+              borderTop: `${1.75 * s}px solid #fee101`,
+              padding: `${4 * s}px ${8 * s}px`,
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
+              flexShrink: 0,
             }}
           >
             <span
               style={{
                 fontFamily: "var(--font-imbue), Imbue, serif",
                 fontWeight: 800,
-                fontSize: 13 * s,
+                fontSize: 11 * s,
                 color: "#fee101",
-                letterSpacing: "0.14em",
+                letterSpacing: "0.12em",
               }}
             >
               HACKER HOUSE GOA
             </span>
-            <PalmSilhouette
-              className="h-5 w-3"
-              color="#fee101"
-            />
+            <PalmSilhouette className="h-4 w-2.5" color="#fee101" />
           </div>
         </div>
       </div>
