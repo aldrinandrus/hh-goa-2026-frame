@@ -36,14 +36,20 @@ export const FunctionalQr = memo(function FunctionalQr({
     };
   }, [url, size, dark, light]);
 
+  // Border sits inside the box so the QR never grows past `size` and clips.
+  const border = Math.max(1, Math.round(size * 0.03));
+
   return (
     <div
       style={{
         width: size,
         height: size,
+        boxSizing: "border-box",
         background: light,
-        border: `1.5px solid ${dark}`,
+        border: `${border}px solid ${dark}`,
         flexShrink: 0,
+        overflow: "hidden",
+        padding: Math.max(2, Math.round(size * 0.04)),
       }}
     >
       {src ? (
@@ -51,13 +57,12 @@ export const FunctionalQr = memo(function FunctionalQr({
         <img
           src={src}
           alt={`QR code linking to ${url}`}
-          width={size}
-          height={size}
           decoding="async"
           style={{
-            width: size,
-            height: size,
+            width: "100%",
+            height: "100%",
             display: "block",
+            objectFit: "contain",
             imageRendering: "pixelated",
           }}
         />

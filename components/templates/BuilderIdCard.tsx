@@ -340,48 +340,59 @@ export const BuilderIdCard = memo(
             >
               {role || "ROLE / STACK"}
             </div>
+            {/* Title + X handle on one centered, vertically aligned row */}
             <div
               style={{
-                marginTop: 7 * s,
-                display: "inline-block",
-                fontFamily: "var(--font-imbue), Imbue, serif",
-                fontWeight: 700,
-                fontSize: 16 * s,
-                color: "#ff0080",
-                letterSpacing: "0.04em",
-                textTransform: "uppercase",
-                borderBottom: `${2 * s}px solid #fee101`,
-                paddingBottom: 2 * s,
+                marginTop: 8 * s,
+                display: "flex",
+                flexWrap: "wrap",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: `${6 * s}px ${10 * s}px`,
               }}
             >
-              {builderTitle}
-            </div>
-            {/* X handle — always reserved space when present; high contrast */}
-            {handle ? (
               <div
                 style={{
-                  marginTop: 8 * s,
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 6 * s,
-                  background: "#000",
-                  color: "#fee101",
-                  fontFamily: "var(--font-victor-mono), monospace",
-                  fontSize: 11 * s,
+                  fontFamily: "var(--font-imbue), Imbue, serif",
                   fontWeight: 700,
+                  fontSize: 16 * s,
+                  lineHeight: 1,
+                  color: "#ff0080",
                   letterSpacing: "0.04em",
-                  padding: `${4 * s}px ${10 * s}px`,
-                  borderRadius: 2 * s,
-                  border: `${1.5 * s}px solid #0b6839`,
-                  boxShadow: `${2 * s}px ${2 * s}px 0 #ff0080`,
+                  textTransform: "uppercase",
+                  borderBottom: `${2 * s}px solid #fee101`,
+                  paddingBottom: 2 * s,
                 }}
               >
-                <span aria-hidden style={{ color: "#fffbe8" }}>
-                  𝕏
-                </span>
-                {handle}
+                {builderTitle}
               </div>
-            ) : null}
+              {handle ? (
+                <div
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 5 * s,
+                    background: "#000",
+                    color: "#fee101",
+                    fontFamily: "var(--font-victor-mono), monospace",
+                    fontSize: 10 * s,
+                    fontWeight: 700,
+                    letterSpacing: "0.04em",
+                    lineHeight: 1,
+                    padding: `${5 * s}px ${9 * s}px`,
+                    borderRadius: 2 * s,
+                    border: `${1.5 * s}px solid #0b6839`,
+                    boxShadow: `${2 * s}px ${2 * s}px 0 #ff0080`,
+                    flexShrink: 0,
+                  }}
+                >
+                  <span aria-hidden style={{ color: "#fffbe8", lineHeight: 1 }}>
+                    𝕏
+                  </span>
+                  {handle}
+                </div>
+              ) : null}
+            </div>
           </div>
 
           {/* Mid decorative wave */}
@@ -396,20 +407,23 @@ export const BuilderIdCard = memo(
             <WaveLine className="w-full h-3" />
           </div>
 
-          {/* FOOTER: ID + stamps + QR */}
+          {/* FOOTER: ID + stamps + QR — padded so QR never clips the frame */}
           <div
             style={{
               marginTop: "auto",
               position: "relative",
               zIndex: 2,
-              padding: `${8 * s}px ${12 * s}px ${10 * s}px`,
+              padding: `${6 * s}px ${14 * s}px ${8 * s}px`,
               display: "flex",
               alignItems: "flex-end",
               justifyContent: "space-between",
-              gap: 8 * s,
+              gap: 10 * s,
+              boxSizing: "border-box",
+              width: "100%",
+              overflow: "visible",
             }}
           >
-            <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ flex: 1, minWidth: 0, paddingRight: 4 * s }}>
               <div
                 style={{
                   fontFamily: "var(--font-victor-mono), monospace",
@@ -425,7 +439,7 @@ export const BuilderIdCard = memo(
                 style={{
                   fontFamily: "var(--font-victor-mono), monospace",
                   fontWeight: 700,
-                  fontSize: 16 * s,
+                  fontSize: 15 * s,
                   color: "#0b6839",
                   letterSpacing: "0.04em",
                 }}
@@ -445,21 +459,21 @@ export const BuilderIdCard = memo(
                   sublabel="28 OCT"
                   rotate={-8}
                   variant="yellow"
-                  size={36 * s}
+                  size={32 * s}
                 />
                 <PassportStamp
                   label="BUILD"
                   sublabel="SHIP"
                   rotate={6}
                   variant="red"
-                  size={34 * s}
+                  size={30 * s}
                 />
               </div>
               <div
                 style={{
-                  marginTop: 6 * s,
+                  marginTop: 5 * s,
                   fontFamily: "var(--font-victor-mono), monospace",
-                  fontSize: 6.5 * s,
+                  fontSize: 6 * s,
                   letterSpacing: "0.08em",
                   color: "#00000055",
                 }}
@@ -468,12 +482,21 @@ export const BuilderIdCard = memo(
               </div>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 * s }}>
-              <FunctionalQr url={publicUrl} size={Math.round(72 * s)} />
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 2 * s,
+                flexShrink: 0,
+                paddingBottom: 2 * s,
+              }}
+            >
+              <FunctionalQr url={publicUrl} size={Math.round(58 * s)} />
               <span
                 style={{
                   fontFamily: "var(--font-victor-mono), monospace",
-                  fontSize: 6 * s,
+                  fontSize: 5.5 * s,
                   letterSpacing: "0.1em",
                   color: "#00000066",
                   textTransform: "uppercase",
